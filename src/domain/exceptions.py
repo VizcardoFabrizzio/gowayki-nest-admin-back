@@ -1,0 +1,18 @@
+class DominioError(Exception):
+    pass
+
+
+class ValidacionError(DominioError):
+    pass
+
+
+class NoEncontradoError(DominioError):
+    pass
+
+
+class ConflictoError(DominioError):
+    pass
+
+
+class NoAutorizadoError(DominioError):
+    pass
