@@ -46,6 +46,6 @@ El código está separado en carpetas para que cada parte tenga una tarea clara:
 - `config\`: configuración de Django y rutas principales.
 - `core\`: app base del proyecto.
 - `src\domain\`: entidades y reglas del negocio.
-- `src\application\`: casos de uso.
+- `src\application\`: casos de uso y reglas de sistema.
 - `src\infrastructure\`: acceso a la base de datos y repositorios.
 - `src\presentation\`: endpoints, serializers y manejo de errores.
