@@ -16,3 +16,15 @@ class ConflictoError(DominioError):
 
 class NoAutorizadoError(DominioError):
     pass
+
+
+class CredencialesInvalidasError(NoAutorizadoError):
+    pass
+
+
+class AccesoDenegadoError(NoAutorizadoError):
+    pass
+
+
+class CuentaBloqueadaError(DominioError):
+    pass
