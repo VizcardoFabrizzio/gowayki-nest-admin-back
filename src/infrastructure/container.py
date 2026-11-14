@@ -1,3 +1,5 @@
+from src.application.usecases.auth.login import LoginUseCase
+from src.application.usecases.auth.registro import RegistroUseCase
 from src.domain.repositories.linea_repository import LineaRepository
 from src.domain.repositories.punto_control_repository import PuntoControlRepository
 from src.domain.repositories.unidad_repository import UnidadRepository
@@ -12,6 +14,14 @@ from src.infrastructure.repositories.django_usuario_repository import DjangoUsua
 
 def usuario_repository() -> UsuarioRepository:
     return DjangoUsuarioRepository()
+
+
+def login_use_case() -> LoginUseCase:
+    return LoginUseCase(usuario_repository())
+
+
+def registro_use_case() -> RegistroUseCase:
+    return RegistroUseCase(usuario_repository())
 
 
 def linea_repository() -> LineaRepository:
