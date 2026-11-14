@@ -10,14 +10,14 @@ def _texto(data) -> str:
 
         partes = []
         for campo, errores in data.items():
-            if isinstance(errores, (list, tuple)):
+            if isinstance(errores, list | tuple):
                 texto = " ".join(str(error) for error in errores)
             else:
                 texto = str(errores)
             partes.append(f"{campo}: {texto}")
         return " ".join(partes) if partes else "Error en la solicitud."
 
-    if isinstance(data, (list, tuple)):
+    if isinstance(data, list | tuple):
         return " ".join(str(error) for error in data)
 
     return str(data)
