@@ -12,6 +12,8 @@ class RegistroSerializer(serializers.Serializer):
     telefono = serializers.CharField(required=False, allow_blank=True, default="")
     email = serializers.CharField(required=False, allow_blank=True, allow_null=True, default=None)
     pin = serializers.CharField(required=False, allow_blank=True, default="", trim_whitespace=False)
+    rol = serializers.CharField(required=False, allow_blank=True, default="JEFE_RUTA")
+    lineaId = serializers.IntegerField(required=False, allow_null=True, default=None)
 
 
 class UsuarioSerializer(serializers.Serializer):
@@ -23,9 +25,16 @@ class UsuarioSerializer(serializers.Serializer):
     fotoUrl = serializers.CharField(allow_null=True)
     rol = serializers.CharField()
     isOnline = serializers.BooleanField()
+    lineaId = serializers.IntegerField(allow_null=True)
+    lineaNombre = serializers.CharField(allow_null=True)
 
 
 class AuthResponseSerializer(serializers.Serializer):
     exito = serializers.BooleanField()
     mensaje = serializers.CharField()
     usuario = UsuarioSerializer()
+
+
+class RegistroResponseSerializer(serializers.Serializer):
+    exito = serializers.BooleanField()
+    mensaje = serializers.CharField()
