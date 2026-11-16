@@ -13,6 +13,10 @@ exclude = ["venv", ".venv", "migrations"]
 select = ["E", "F", "I", "B", "UP", "DJ"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# Los modelos reflejan columnas nullable de la BD y no son entidades de negocio.
+"src/infrastructure/models/*.py" = ["DJ001", "DJ008"]
+
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py"]
