@@ -3,14 +3,18 @@ from django.db import connection
 
 from src.infrastructure.models.linea import Linea
 from src.infrastructure.models.punto_control import PuntoControl
+from src.infrastructure.models.solicitud_registro import SolicitudRegistro
 from src.infrastructure.models.unidad import Unidad
 from src.infrastructure.models.usuario import Usuario
+from src.infrastructure.models.usuario_linea import UsuarioLinea
 
 MODELOS = {
     "usuario": Usuario,
     "linea": Linea,
     "unidad": Unidad,
     "punto_control": PuntoControl,
+    "usuario_linea": UsuarioLinea,
+    "solicitud_registro": SolicitudRegistro,
 }
 
 IGNORADAS = {
