@@ -16,3 +16,5 @@ class Usuario:
     rol: Rol
     is_online: bool
     created_at: datetime
+    linea_id: int | None = None
+    linea_nombre: str | None = None
