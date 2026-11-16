@@ -130,9 +130,7 @@ class DjangoUsuarioRepository(UsuarioRepository):
         if not ids:
             return {}
         filas = list(
-            UsuarioLineaModel.objects.filter(usuario_id__in=ids).values(
-                "usuario_id", "linea_id"
-            )
+            UsuarioLineaModel.objects.filter(usuario_id__in=ids).values("usuario_id", "linea_id")
         )
         nombres = dict(
             LineaModel.objects.filter(id__in={fila["linea_id"] for fila in filas}).values_list(
@@ -140,8 +138,7 @@ class DjangoUsuarioRepository(UsuarioRepository):
             )
         )
         return {
-            fila["usuario_id"]: (fila["linea_id"], nombres.get(fila["linea_id"]))
-            for fila in filas
+            fila["usuario_id"]: (fila["linea_id"], nombres.get(fila["linea_id"])) for fila in filas
         }
 
     @staticmethod

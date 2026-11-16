@@ -33,9 +33,7 @@ class Command(BaseCommand):
                 try:
                     columnas_db = {
                         columna.name
-                        for columna in connection.introspection.get_table_description(
-                            cursor, tabla
-                        )
+                        for columna in connection.introspection.get_table_description(cursor, tabla)
                     }
                 except Exception as exc:
                     raise CommandError(f"No se pudo leer la tabla {tabla}: {exc}") from exc
@@ -50,13 +48,9 @@ class Command(BaseCommand):
                     diferencias.append((tabla, faltantes, sobrantes))
                     self.stderr.write(f"{tabla}:")
                     if faltantes:
-                        self.stderr.write(
-                            f"  faltan en el modelo: {', '.join(sorted(faltantes))}"
-                        )
+                        self.stderr.write(f"  faltan en el modelo: {', '.join(sorted(faltantes))}")
                     if sobrantes:
-                        self.stderr.write(
-                            f"  sobran en el modelo: {', '.join(sorted(sobrantes))}"
-                        )
+                        self.stderr.write(f"  sobran en el modelo: {', '.join(sorted(sobrantes))}")
                 else:
                     self.stdout.write(f"{tabla}: ok")
 
