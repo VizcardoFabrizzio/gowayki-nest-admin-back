@@ -8,17 +8,24 @@ from src.domain.exceptions import (
     CuentaBloqueadaError,
     ValidacionError,
 )
+from src.domain.repositories.solicitud_registro_repository import SolicitudRegistroRepository
 from src.domain.repositories.usuario_repository import CredencialesUsuario, UsuarioRepository
 from src.domain.value_objects import Dni, Pin, Rol
 from src.infrastructure.security.pin_hasher import PinHasher
 
 MAX_INTENTOS = 5
 MINUTOS_BLOQUEO = 15
+ROLES_PANEL = (Rol.ADMIN, Rol.JEFE_RUTA)
 
 
 class LoginUseCase:
-    def __init__(self, repositorio: UsuarioRepository) -> None:
+    def __init__(
+        self,
+        repositorio: UsuarioRepository,
+        solicitudes: SolicitudRegistroRepository,
+    ) -> None:
         self._repositorio = repositorio
+        self._solicitudes = solicitudes
 
     def ejecutar(self, identificador: str, pin: str) -> Usuario:
         identificador = (identificador or "").strip()
@@ -62,7 +69,11 @@ class LoginUseCase:
         usuario = self._repositorio.find_by_id(credenciales.id)
         if usuario is None:
             raise CredencialesInvalidasError("Credenciales inválidas.")
-        if usuario.rol != Rol.ADMIN:
+        if usuario.rol == Rol.CHOFER:
+            raise AccesoDenegadoError(
+                "Esta cuenta es de chofer: ingresa desde la app móvil, no desde el panel."
+            )
+        if usuario.rol not in ROLES_PANEL:
             raise AccesoDenegadoError("Esta cuenta no tiene acceso al panel.")
 
         self._repositorio.update_login_state(credenciales.id, True, 0, None)
@@ -72,4 +83,7 @@ class LoginUseCase:
         if "@" in identificador:
             return self._repositorio.find_auth_by_email(identificador)
         Dni(identificador)
-        return self._repositorio.find_auth_by_dni(identificador)
+        credenciales = self._repositorio.find_auth_by_dni(identificador)
+        if credenciales is None and self._solicitudes.find_pendiente_by_dni(identificador):
+            raise AccesoDenegadoError("Tu cuenta aún espera aprobación en Solicitudes.")
+        return credenciales

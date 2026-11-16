@@ -16,6 +16,18 @@ class EstadoUnidad(StrEnum):
     BAJA = "BAJA"
 
 
+class TipoSolicitud(StrEnum):
+    JEFE_RUTA = "JEFE_RUTA"
+    CHOFER = "CHOFER"
+    CAMBIO_RUTA = "CAMBIO_RUTA"
+
+
+class EstadoSolicitud(StrEnum):
+    PENDIENTE = "PENDIENTE"
+    APROBADA = "APROBADA"
+    RECHAZADA = "RECHAZADA"
+
+
 @dataclass(frozen=True)
 class Dni:
     valor: str

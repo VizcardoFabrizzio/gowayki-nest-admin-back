@@ -3,14 +3,18 @@ from django.db import connection
 
 from src.infrastructure.models.linea import Linea
 from src.infrastructure.models.punto_control import PuntoControl
+from src.infrastructure.models.solicitud_registro import SolicitudRegistro
 from src.infrastructure.models.unidad import Unidad
 from src.infrastructure.models.usuario import Usuario
+from src.infrastructure.models.usuario_linea import UsuarioLinea
 
 MODELOS = {
     "usuario": Usuario,
     "linea": Linea,
     "unidad": Unidad,
     "punto_control": PuntoControl,
+    "usuario_linea": UsuarioLinea,
+    "solicitud_registro": SolicitudRegistro,
 }
 
 IGNORADAS = {
@@ -29,9 +33,7 @@ class Command(BaseCommand):
                 try:
                     columnas_db = {
                         columna.name
-                        for columna in connection.introspection.get_table_description(
-                            cursor, tabla
-                        )
+                        for columna in connection.introspection.get_table_description(cursor, tabla)
                     }
                 except Exception as exc:
                     raise CommandError(f"No se pudo leer la tabla {tabla}: {exc}") from exc
@@ -46,13 +48,9 @@ class Command(BaseCommand):
                     diferencias.append((tabla, faltantes, sobrantes))
                     self.stderr.write(f"{tabla}:")
                     if faltantes:
-                        self.stderr.write(
-                            f"  faltan en el modelo: {', '.join(sorted(faltantes))}"
-                        )
+                        self.stderr.write(f"  faltan en el modelo: {', '.join(sorted(faltantes))}")
                     if sobrantes:
-                        self.stderr.write(
-                            f"  sobran en el modelo: {', '.join(sorted(sobrantes))}"
-                        )
+                        self.stderr.write(f"  sobran en el modelo: {', '.join(sorted(sobrantes))}")
                 else:
                     self.stdout.write(f"{tabla}: ok")
 

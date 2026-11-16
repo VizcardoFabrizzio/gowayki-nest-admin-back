@@ -8,26 +8,32 @@ from src.domain.exceptions import ConflictoError
 from src.domain.repositories.usuario_repository import CredencialesUsuario, UsuarioRepository
 from src.domain.value_objects import Rol
 from src.infrastructure.mappers.usuario_mapper import UsuarioMapper
+from src.infrastructure.models.linea import Linea as LineaModel
 from src.infrastructure.models.usuario import Usuario as UsuarioModel
+from src.infrastructure.models.usuario_linea import UsuarioLinea as UsuarioLineaModel
 
 
 class DjangoUsuarioRepository(UsuarioRepository):
     def find_all(self) -> list[Usuario]:
-        return [
-            UsuarioMapper.to_domain(modelo) for modelo in UsuarioModel.objects.order_by("nombre")
-        ]
+        modelos = list(UsuarioModel.objects.order_by("nombre"))
+        lineas = self._lineas_por_usuario([modelo.id for modelo in modelos])
+        usuarios = []
+        for modelo in modelos:
+            linea_id, linea_nombre = lineas.get(modelo.id, (None, None))
+            usuarios.append(UsuarioMapper.to_domain(modelo, linea_id, linea_nombre))
+        return usuarios
 
     def find_by_id(self, usuario_id: UUID) -> Usuario | None:
         modelo = UsuarioModel.objects.filter(id=usuario_id).first()
-        return UsuarioMapper.to_domain(modelo) if modelo else None
+        return self._to_domain(modelo) if modelo else None
 
     def find_by_dni(self, dni: str) -> Usuario | None:
         modelo = UsuarioModel.objects.filter(dni=dni).first()
-        return UsuarioMapper.to_domain(modelo) if modelo else None
+        return self._to_domain(modelo) if modelo else None
 
     def find_by_email(self, email: str) -> Usuario | None:
         modelo = UsuarioModel.objects.filter(email__iexact=email).first()
-        return UsuarioMapper.to_domain(modelo) if modelo else None
+        return self._to_domain(modelo) if modelo else None
 
     def find_auth_by_dni(self, dni: str) -> CredencialesUsuario | None:
         modelo = UsuarioModel.objects.filter(dni=dni).first()
@@ -58,7 +64,7 @@ class DjangoUsuarioRepository(UsuarioRepository):
             )
         except IntegrityError as exc:
             raise ConflictoError("El DNI, telefono o email ya esta registrado.") from exc
-        return UsuarioMapper.to_domain(guardado)
+        return self._to_domain(guardado)
 
     def update_login_state(
         self,
@@ -101,6 +107,39 @@ class DjangoUsuarioRepository(UsuarioRepository):
         if exclude_id is not None:
             consulta = consulta.exclude(id=exclude_id)
         return consulta.exists()
+
+    @classmethod
+    def _to_domain(cls, modelo: UsuarioModel) -> Usuario:
+        linea_id, linea_nombre = cls._linea_de(modelo.id)
+        return UsuarioMapper.to_domain(modelo, linea_id, linea_nombre)
+
+    @staticmethod
+    def _linea_de(usuario_id: UUID) -> tuple[int | None, str | None]:
+        linea_id = (
+            UsuarioLineaModel.objects.filter(usuario_id=usuario_id)
+            .values_list("linea_id", flat=True)
+            .first()
+        )
+        if linea_id is None:
+            return None, None
+        nombre = LineaModel.objects.filter(id=linea_id).values_list("nombre", flat=True).first()
+        return linea_id, nombre
+
+    @staticmethod
+    def _lineas_por_usuario(ids: list[UUID]) -> dict[UUID, tuple[int | None, str | None]]:
+        if not ids:
+            return {}
+        filas = list(
+            UsuarioLineaModel.objects.filter(usuario_id__in=ids).values("usuario_id", "linea_id")
+        )
+        nombres = dict(
+            LineaModel.objects.filter(id__in={fila["linea_id"] for fila in filas}).values_list(
+                "id", "nombre"
+            )
+        )
+        return {
+            fila["usuario_id"]: (fila["linea_id"], nombres.get(fila["linea_id"])) for fila in filas
+        }
 
     @staticmethod
     def _to_credentials(modelo: UsuarioModel) -> CredencialesUsuario:
