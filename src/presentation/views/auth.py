@@ -9,6 +9,7 @@ from src.infrastructure.container import login_use_case, registro_use_case
 from src.presentation.serializers.auth import (
     AuthResponseSerializer,
     LoginSerializer,
+    RegistroResponseSerializer,
     RegistroSerializer,
 )
 
@@ -23,6 +24,8 @@ def _usuario_json(usuario: Usuario) -> dict:
         "fotoUrl": usuario.foto_url,
         "rol": usuario.rol.value,
         "isOnline": usuario.is_online,
+        "lineaId": usuario.linea_id,
+        "lineaNombre": usuario.linea_nombre,
     }
 
 
@@ -45,24 +48,25 @@ class LoginView(APIView):
 
 
 class RegistroView(APIView):
-    @extend_schema(request=RegistroSerializer, responses={201: AuthResponseSerializer})
+    @extend_schema(request=RegistroSerializer, responses={201: RegistroResponseSerializer})
     def post(self, request):
         datos = RegistroSerializer(data=request.data)
         datos.is_valid(raise_exception=True)
-        usuario = registro_use_case().ejecutar(
+        registro_use_case().ejecutar(
             RegistroDTO(
                 nombre=datos.validated_data["nombre"],
                 dni=datos.validated_data["dni"],
                 telefono=datos.validated_data["telefono"],
                 email=datos.validated_data["email"],
                 pin=datos.validated_data["pin"],
+                linea_id=datos.validated_data["lineaId"],
+                rol=datos.validated_data["rol"],
             )
         )
         return Response(
             {
                 "exito": True,
-                "mensaje": "Cuenta creada correctamente.",
-                "usuario": _usuario_json(usuario),
+                "mensaje": "Solicitud enviada. Un administrador debe aprobarla.",
             },
             status=status.HTTP_201_CREATED,
         )
