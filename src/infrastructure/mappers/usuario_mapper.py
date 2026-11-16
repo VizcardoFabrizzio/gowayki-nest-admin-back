@@ -5,7 +5,11 @@ from src.infrastructure.models.usuario import Usuario as UsuarioModel
 
 class UsuarioMapper:
     @staticmethod
-    def to_domain(modelo: UsuarioModel) -> Usuario:
+    def to_domain(
+        modelo: UsuarioModel,
+        linea_id: int | None = None,
+        linea_nombre: str | None = None,
+    ) -> Usuario:
         return Usuario(
             id=modelo.id,
             nombre=modelo.nombre,
@@ -16,6 +20,8 @@ class UsuarioMapper:
             rol=Rol(modelo.rol),
             is_online=modelo.is_online,
             created_at=modelo.created_at,
+            linea_id=linea_id,
+            linea_nombre=linea_nombre,
         )
 
     @staticmethod
