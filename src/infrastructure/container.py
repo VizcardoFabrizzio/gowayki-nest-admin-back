@@ -1,5 +1,8 @@
 from src.application.usecases.auth.login import LoginUseCase
 from src.application.usecases.auth.registro import RegistroUseCase
+from src.application.usecases.usuarios.actualizar_rol import ActualizarRolUseCase
+from src.application.usecases.usuarios.eliminar import EliminarUsuarioUseCase
+from src.application.usecases.usuarios.listar import ListarUsuariosUseCase
 from src.domain.repositories.linea_repository import LineaRepository
 from src.domain.repositories.punto_control_repository import PuntoControlRepository
 from src.domain.repositories.solicitud_registro_repository import SolicitudRegistroRepository
@@ -34,6 +37,18 @@ def registro_use_case() -> RegistroUseCase:
         solicitud_registro_repository(),
         linea_repository(),
     )
+
+
+def listar_usuarios_use_case() -> ListarUsuariosUseCase:
+    return ListarUsuariosUseCase(usuario_repository())
+
+
+def actualizar_rol_use_case() -> ActualizarRolUseCase:
+    return ActualizarRolUseCase(usuario_repository())
+
+
+def eliminar_usuario_use_case() -> EliminarUsuarioUseCase:
+    return EliminarUsuarioUseCase(usuario_repository())
 
 
 def linea_repository() -> LineaRepository:
