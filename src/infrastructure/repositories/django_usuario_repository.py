@@ -43,7 +43,12 @@ class DjangoUsuarioRepository(UsuarioRepository):
         modelo = UsuarioModel.objects.filter(email__iexact=email).first()
         return self._to_credentials(modelo) if modelo else None
 
-    def save(self, usuario: Usuario, pin_hash: str | None = None) -> Usuario:
+    def save(
+        self,
+        usuario: Usuario,
+        pin_hash: str | None = None,
+        linea_id: int | None = None,
+    ) -> Usuario:
         modelo = UsuarioMapper.to_orm(usuario)
         datos = {
             "nombre": modelo.nombre,
@@ -62,8 +67,15 @@ class DjangoUsuarioRepository(UsuarioRepository):
                 id=usuario.id,
                 defaults=datos,
             )
+            if linea_id is not None:
+                UsuarioLineaModel.objects.update_or_create(
+                    usuario_id=usuario.id,
+                    defaults={"linea_id": linea_id},
+                )
         except IntegrityError as exc:
-            raise ConflictoError("El DNI, telefono o email ya esta registrado.") from exc
+            raise ConflictoError(
+                "El DNI, telefono o email ya esta registrado, o la linea no existe."
+            ) from exc
         return self._to_domain(guardado)
 
     def update_login_state(
