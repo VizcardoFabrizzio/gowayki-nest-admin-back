@@ -40,7 +40,12 @@ class UsuarioRepository(ABC):
         pass
 
     @abstractmethod
-    def save(self, usuario: Usuario, pin_hash: str | None = None) -> Usuario:
+    def save(
+        self,
+        usuario: Usuario,
+        pin_hash: str | None = None,
+        linea_id: int | None = None,
+    ) -> Usuario:
         pass
 
     @abstractmethod
