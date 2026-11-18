@@ -4,7 +4,7 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class Linea:
-    id: int
+    id: int | None
     nombre: str
     origen: str
     destino: str
