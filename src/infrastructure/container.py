@@ -1,5 +1,11 @@
 from src.application.usecases.auth.login import LoginUseCase
 from src.application.usecases.auth.registro import RegistroUseCase
+from src.application.usecases.lineas.actualizar import ActualizarLineaUseCase
+from src.application.usecases.lineas.crear import CrearLineaUseCase
+from src.application.usecases.lineas.eliminar import EliminarLineaUseCase
+from src.application.usecases.lineas.listar import ListarLineasUseCase
+from src.application.usecases.lineas.obtener import ObtenerLineaUseCase
+from src.application.usecases.puntos_control.listar import ListarPuntosControlUseCase
 from src.application.usecases.usuarios.actualizar_rol import ActualizarRolUseCase
 from src.application.usecases.usuarios.eliminar import EliminarUsuarioUseCase
 from src.application.usecases.usuarios.listar import ListarUsuariosUseCase
@@ -61,3 +67,27 @@ def unidad_repository() -> UnidadRepository:
 
 def punto_control_repository() -> PuntoControlRepository:
     return DjangoPuntoControlRepository()
+
+
+def listar_lineas_use_case() -> ListarLineasUseCase:
+    return ListarLineasUseCase(linea_repository())
+
+
+def obtener_linea_use_case() -> ObtenerLineaUseCase:
+    return ObtenerLineaUseCase(linea_repository())
+
+
+def crear_linea_use_case() -> CrearLineaUseCase:
+    return CrearLineaUseCase(linea_repository())
+
+
+def actualizar_linea_use_case() -> ActualizarLineaUseCase:
+    return ActualizarLineaUseCase(linea_repository())
+
+
+def eliminar_linea_use_case() -> EliminarLineaUseCase:
+    return EliminarLineaUseCase(linea_repository())
+
+
+def listar_puntos_control_use_case() -> ListarPuntosControlUseCase:
+    return ListarPuntosControlUseCase(linea_repository(), punto_control_repository())
