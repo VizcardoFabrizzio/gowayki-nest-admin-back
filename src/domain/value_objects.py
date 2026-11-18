@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -64,6 +65,20 @@ class Pin:
         valor = self.valor.strip()
         if len(valor) < 4 or not valor.isdigit():
             raise ValidacionError("El PIN debe tener al menos 4 dígitos numéricos.")
+        object.__setattr__(self, "valor", valor)
+
+    def __str__(self) -> str:
+        return self.valor
+
+
+@dataclass(frozen=True)
+class ColorHex:
+    valor: str
+
+    def __post_init__(self) -> None:
+        valor = self.valor.strip()
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", valor):
+            raise ValidacionError("El color debe tener el formato #RRGGBB.")
         object.__setattr__(self, "valor", valor)
 
     def __str__(self) -> str:
