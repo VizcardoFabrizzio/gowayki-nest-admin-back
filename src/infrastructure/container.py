@@ -6,6 +6,11 @@ from src.application.usecases.lineas.eliminar import EliminarLineaUseCase
 from src.application.usecases.lineas.listar import ListarLineasUseCase
 from src.application.usecases.lineas.obtener import ObtenerLineaUseCase
 from src.application.usecases.puntos_control.listar import ListarPuntosControlUseCase
+from src.application.usecases.unidades.actualizar import ActualizarUnidadUseCase
+from src.application.usecases.unidades.crear import CrearUnidadUseCase
+from src.application.usecases.unidades.eliminar import EliminarUnidadUseCase
+from src.application.usecases.unidades.listar import ListarUnidadesUseCase
+from src.application.usecases.unidades.listar_por_linea import ListarUnidadesPorLineaUseCase
 from src.application.usecases.usuarios.actualizar_rol import ActualizarRolUseCase
 from src.application.usecases.usuarios.eliminar import EliminarUsuarioUseCase
 from src.application.usecases.usuarios.listar import ListarUsuariosUseCase
@@ -91,3 +96,23 @@ def eliminar_linea_use_case() -> EliminarLineaUseCase:
 
 def listar_puntos_control_use_case() -> ListarPuntosControlUseCase:
     return ListarPuntosControlUseCase(linea_repository(), punto_control_repository())
+
+
+def listar_unidades_use_case() -> ListarUnidadesUseCase:
+    return ListarUnidadesUseCase(unidad_repository())
+
+
+def listar_unidades_por_linea_use_case() -> ListarUnidadesPorLineaUseCase:
+    return ListarUnidadesPorLineaUseCase(unidad_repository(), linea_repository())
+
+
+def crear_unidad_use_case() -> CrearUnidadUseCase:
+    return CrearUnidadUseCase(unidad_repository(), linea_repository())
+
+
+def actualizar_unidad_use_case() -> ActualizarUnidadUseCase:
+    return ActualizarUnidadUseCase(unidad_repository(), linea_repository())
+
+
+def eliminar_unidad_use_case() -> EliminarUnidadUseCase:
+    return EliminarUnidadUseCase(unidad_repository())
