@@ -31,3 +31,7 @@ class UnidadRepository(ABC):
     @abstractmethod
     def exists_by_placa(self, placa: str, exclude_id: int | None = None) -> bool:
         pass
+
+    @abstractmethod
+    def has_registros(self, unidad_id: int) -> bool:
+        pass
