@@ -1,4 +1,6 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
+from django.db.models import QuerySet
+from django.db.models.expressions import RawSQL
 
 from src.domain.entities.unidad import Unidad
 from src.domain.exceptions import ConflictoError
@@ -8,18 +10,41 @@ from src.infrastructure.models.unidad import Unidad as UnidadModel
 
 
 class DjangoUnidadRepository(UnidadRepository):
+    def _con_posicion(self, consulta: QuerySet) -> QuerySet:
+        return consulta.select_related("linea").annotate(
+            posicion_lat=RawSQL(
+                "(select ST_Y(up.posicion) from unidad_posicion up where up.unidad_id = unidad.id)",
+                [],
+            ),
+            posicion_lng=RawSQL(
+                "(select ST_X(up.posicion) from unidad_posicion up where up.unidad_id = unidad.id)",
+                [],
+            ),
+            posicion_velocidad=RawSQL(
+                "(select up.velocidad_kmh from unidad_posicion up where up.unidad_id = unidad.id)",
+                [],
+            ),
+            posicion_rumbo=RawSQL(
+                "(select up.rumbo_grados from unidad_posicion up where up.unidad_id = unidad.id)",
+                [],
+            ),
+            posicion_actualizada=RawSQL(
+                "(select up.updated_at from unidad_posicion up where up.unidad_id = unidad.id)",
+                [],
+            ),
+        )
+
     def find_all(self) -> list[Unidad]:
-        return [UnidadMapper.to_domain(modelo) for modelo in UnidadModel.objects.order_by("id")]
+        consulta = self._con_posicion(UnidadModel.objects.order_by("id"))
+        return [UnidadMapper.to_domain(modelo) for modelo in consulta]
 
     def find_by_id(self, unidad_id: int) -> Unidad | None:
-        modelo = UnidadModel.objects.filter(id=unidad_id).first()
+        modelo = self._con_posicion(UnidadModel.objects.filter(id=unidad_id)).first()
         return UnidadMapper.to_domain(modelo) if modelo else None
 
     def find_by_linea(self, linea_id: int) -> list[Unidad]:
-        return [
-            UnidadMapper.to_domain(modelo)
-            for modelo in UnidadModel.objects.filter(linea_id=linea_id).order_by("id")
-        ]
+        consulta = self._con_posicion(UnidadModel.objects.filter(linea_id=linea_id).order_by("id"))
+        return [UnidadMapper.to_domain(modelo) for modelo in consulta]
 
     def save(self, unidad: Unidad) -> Unidad:
         modelo = UnidadMapper.to_orm(unidad)
@@ -45,3 +70,14 @@ class DjangoUnidadRepository(UnidadRepository):
         if exclude_id is not None:
             consulta = consulta.exclude(id=exclude_id)
         return consulta.exists()
+
+    def has_registros(self, unidad_id: int) -> bool:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select exists(select 1 from asignacion_turno where unidad_id = %s)
+                    or exists(select 1 from alerta_incidencia where unidad_id = %s)
+                """,
+                [unidad_id, unidad_id],
+            )
+            return bool(cursor.fetchone()[0])

@@ -7,4 +7,5 @@ urlpatterns = [
     path("", include("src.presentation.urls.auth")),
     path("", include("src.presentation.urls.usuario")),
     path("", include("src.presentation.urls.linea")),
+    path("", include("src.presentation.urls.unidad")),
 ]
