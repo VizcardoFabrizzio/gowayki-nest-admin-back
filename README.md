@@ -49,3 +49,9 @@ El código está separado en carpetas para que cada parte tenga una tarea clara:
 - `src\application\`: casos de uso y reglas de sistema.
 - `src\infrastructure\`: acceso a la base de datos y repositorios.
 - `src\presentation\`: endpoints, serializers y manejo de errores.
+
+## Historial de cambios
+
+Los cambios los registro en commits granulares (son pequeños y verificables): cada uno
+agrega o modifica una parte concreta de un módulo. Lo que me facilita a futuro
+revisar, entender y revertir cambios.
