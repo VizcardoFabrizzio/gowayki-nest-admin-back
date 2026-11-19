@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 
 from src.domain.exceptions import ValidacionError
@@ -13,8 +14,21 @@ class Rol(StrEnum):
 
 class EstadoUnidad(StrEnum):
     OPERATIVA = "OPERATIVA"
+    INACTIVA = "INACTIVA"
     MANTENIMIENTO = "MANTENIMIENTO"
     BAJA = "BAJA"
+
+    @classmethod
+    def del_panel(cls, valor: str) -> "EstadoUnidad":
+        try:
+            estado = cls(valor)
+        except ValueError as exc:
+            raise ValidacionError(
+                "El estado debe ser OPERATIVA, INACTIVA o MANTENIMIENTO."
+            ) from exc
+        if estado is cls.BAJA:
+            raise ValidacionError("El estado debe ser OPERATIVA, INACTIVA o MANTENIMIENTO.")
+        return estado
 
 
 class TipoSolicitud(StrEnum):
@@ -83,3 +97,12 @@ class ColorHex:
 
     def __str__(self) -> str:
         return self.valor
+
+
+@dataclass(frozen=True)
+class PosicionGps:
+    lat: float
+    lng: float
+    velocidad_kmh: float
+    rumbo_grados: int
+    ultima_actualizacion: datetime
