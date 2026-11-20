@@ -8,4 +8,5 @@ urlpatterns = [
     path("", include("src.presentation.urls.usuario")),
     path("", include("src.presentation.urls.linea")),
     path("", include("src.presentation.urls.unidad")),
+    path("", include("src.presentation.urls.solicitud_registro")),
 ]
