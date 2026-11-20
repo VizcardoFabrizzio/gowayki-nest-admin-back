@@ -6,6 +6,9 @@ from src.application.usecases.lineas.eliminar import EliminarLineaUseCase
 from src.application.usecases.lineas.listar import ListarLineasUseCase
 from src.application.usecases.lineas.obtener import ObtenerLineaUseCase
 from src.application.usecases.puntos_control.listar import ListarPuntosControlUseCase
+from src.application.usecases.solicitudes.crear_cambio_ruta import CrearCambioRutaUseCase
+from src.application.usecases.solicitudes.listar import ListarSolicitudesUseCase
+from src.application.usecases.solicitudes.resolver import ResolverSolicitudUseCase
 from src.application.usecases.unidades.actualizar import ActualizarUnidadUseCase
 from src.application.usecases.unidades.crear import CrearUnidadUseCase
 from src.application.usecases.unidades.eliminar import EliminarUnidadUseCase
@@ -116,3 +119,23 @@ def actualizar_unidad_use_case() -> ActualizarUnidadUseCase:
 
 def eliminar_unidad_use_case() -> EliminarUnidadUseCase:
     return EliminarUnidadUseCase(unidad_repository())
+
+
+def listar_solicitudes_use_case() -> ListarSolicitudesUseCase:
+    return ListarSolicitudesUseCase(solicitud_registro_repository())
+
+
+def crear_cambio_ruta_use_case() -> CrearCambioRutaUseCase:
+    return CrearCambioRutaUseCase(
+        solicitud_registro_repository(),
+        usuario_repository(),
+        linea_repository(),
+    )
+
+
+def resolver_solicitud_use_case() -> ResolverSolicitudUseCase:
+    return ResolverSolicitudUseCase(
+        solicitud_registro_repository(),
+        usuario_repository(),
+        linea_repository(),
+    )

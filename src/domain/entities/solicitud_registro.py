@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from uuid import UUID
 
 from src.domain.value_objects import EstadoSolicitud, TipoSolicitud
 
@@ -10,10 +11,14 @@ class SolicitudRegistro:
     tipo: TipoSolicitud
     dni: str
     nombre_completo: str
-    telefono: str | None
-    email: str | None
-    ruta_trabajo: str | None
-    linea_solicitada_id: int | None
-    pin_hash: str | None
     estado: EstadoSolicitud
     creado_en: datetime
+    telefono: str | None = None
+    email: str | None = None
+    ruta_trabajo: str | None = None
+    placa_numero: str | None = None
+    linea_solicitada_id: int | None = None
+    usuario_id: UUID | None = None
+    pin_hash: str | None = None
+    usuario_asignado: str | None = None
+    actualizado_en: datetime | None = None
