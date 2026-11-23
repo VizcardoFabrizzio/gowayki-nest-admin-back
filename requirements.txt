@@ -21,3 +21,6 @@ coverage==7.6.10
 
 # Servidor de produccion
 gunicorn==23.0.0
+
+# Autenticacion (JWT)
+PyJWT==2.15.1
