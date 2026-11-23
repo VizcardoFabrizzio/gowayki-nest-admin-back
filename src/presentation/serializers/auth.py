@@ -33,6 +33,7 @@ class AuthResponseSerializer(serializers.Serializer):
     exito = serializers.BooleanField()
     mensaje = serializers.CharField()
     usuario = UsuarioSerializer()
+    token = serializers.CharField()
 
 
 class RegistroResponseSerializer(serializers.Serializer):

@@ -12,6 +12,7 @@ from src.infrastructure.container import (
     listar_lineas_use_case,
     obtener_linea_use_case,
 )
+from src.presentation.permissions import EsAdmin
 from src.presentation.serializers.linea import (
     ActualizarLineaSerializer,
     CrearLineaSerializer,
@@ -31,6 +32,8 @@ def _linea_json(linea: Linea) -> dict:
 
 
 class LineaListView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(responses=LineaSerializer(many=True))
     def get(self, request):
         lineas = listar_lineas_use_case().ejecutar()
@@ -53,6 +56,8 @@ class LineaListView(APIView):
 
 
 class LineaDetailView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(responses=LineaSerializer)
     def get(self, request, linea_id: int):
         linea = obtener_linea_use_case().ejecutar(linea_id)

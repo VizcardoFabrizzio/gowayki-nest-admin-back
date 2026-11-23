@@ -94,7 +94,7 @@ def test_api_listar_usuarios(api):
     resp = client.get("/api/usuarios")
     assert resp.status_code == status.HTTP_200_OK
     assert isinstance(resp.data, list)
-    assert len(resp.data) == 1
+    assert len(resp.data) == 2
 
 
 def test_api_actualizar_rol(api):

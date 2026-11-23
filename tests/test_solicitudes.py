@@ -247,11 +247,14 @@ def test_api_crear_cambio_ruta(api):
     repos, client = api
     uid, user = _user(repos)
     linea = _linea(repos)
+    from src.infrastructure.security.jwt import generar_token
+
+    token = generar_token(user)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
     resp = client.post(
         "/api/solicitudes-registro",
         {
             "tipo": "CAMBIO_RUTA",
-            "usuarioId": str(uid),
             "lineaSolicitadaId": linea.id,
         },
         format="json",

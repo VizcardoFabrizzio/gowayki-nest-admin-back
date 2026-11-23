@@ -1,11 +1,13 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from src.application.dtos.auth import RegistroDTO
 from src.domain.entities.usuario import Usuario
 from src.infrastructure.container import login_use_case, registro_use_case
+from src.infrastructure.security.jwt import generar_token
 from src.presentation.serializers.auth import (
     AuthResponseSerializer,
     LoginSerializer,
@@ -30,6 +32,8 @@ def _usuario_json(usuario: Usuario) -> dict:
 
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
     @extend_schema(request=LoginSerializer, responses=AuthResponseSerializer)
     def post(self, request):
         datos = LoginSerializer(data=request.data)
@@ -38,16 +42,20 @@ class LoginView(APIView):
             datos.validated_data["dni"],
             datos.validated_data["pin"],
         )
+        token = generar_token(usuario)
         return Response(
             {
                 "exito": True,
                 "mensaje": "Inicio de sesión exitoso.",
                 "usuario": _usuario_json(usuario),
+                "token": token,
             }
         )
 
 
 class RegistroView(APIView):
+    permission_classes = [AllowAny]
+
     @extend_schema(request=RegistroSerializer, responses={201: RegistroResponseSerializer})
     def post(self, request):
         datos = RegistroSerializer(data=request.data)

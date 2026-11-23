@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from src.application.dtos.punto_control import ListarPuntosControlDTO
 from src.domain.entities.punto_control import PuntoControl
 from src.infrastructure.container import listar_puntos_control_use_case
+from src.presentation.permissions import EsAdmin
 from src.presentation.serializers.punto_control import PuntoControlSerializer
 
 
@@ -21,6 +22,8 @@ def _punto_json(punto: PuntoControl) -> dict:
 
 
 class PuntoControlListView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(responses=PuntoControlSerializer(many=True))
     def get(self, request, linea_id: int):
         puntos = listar_puntos_control_use_case().ejecutar(

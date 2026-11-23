@@ -16,6 +16,7 @@ from src.infrastructure.container import (
     listar_solicitudes_use_case,
     resolver_solicitud_use_case,
 )
+from src.presentation.permissions import EsAdminOJefeRuta
 from src.presentation.serializers.solicitud_registro import (
     CrearCambioRutaSerializer,
     ResolverSolicitudSerializer,
@@ -40,19 +41,15 @@ def _solicitud_json(solicitud: SolicitudRegistro) -> dict:
 
 
 class SolicitudRegistroListView(APIView):
+    permission_classes = [EsAdminOJefeRuta]
+
     @extend_schema(responses=SolicitudRegistroSerializer(many=True))
     def get(self, request):
-        rol = (request.query_params.get("rol") or "").strip()
-        linea_raw = request.query_params.get("lineaId")
+        usuario = request.user
+        rol = getattr(usuario, "rol", "")
         linea_id = None
-        if linea_raw is not None and linea_raw != "":
-            try:
-                linea_id = int(linea_raw)
-            except (TypeError, ValueError):
-                return Response(
-                    {"exito": False, "mensaje": "La línea no es válida."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        if rol == "JEFE_RUTA":
+            linea_id = getattr(usuario, "linea_id", None)
         solicitudes = listar_solicitudes_use_case().ejecutar(
             ListarSolicitudesDTO(rol=rol, linea_id=linea_id)
         )
@@ -63,8 +60,16 @@ class SolicitudRegistroListView(APIView):
         datos = CrearCambioRutaSerializer(data=request.data)
         datos.is_valid(raise_exception=True)
 
+        usuario = request.user
+        usuario_id = getattr(usuario, "id", None)
+        if usuario_id is None:
+            return Response(
+                {"exito": False, "mensaje": "El usuario no es válido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
-            usuario_id = UUID(datos.validated_data["usuarioId"])
+            usuario_uuid = UUID(str(usuario_id))
         except (ValueError, AttributeError):
             return Response(
                 {"exito": False, "mensaje": "El usuario no es válido."},
@@ -74,7 +79,7 @@ class SolicitudRegistroListView(APIView):
         solicitud = crear_cambio_ruta_use_case().ejecutar(
             CrearCambioRutaDTO(
                 tipo=datos.validated_data["tipo"],
-                usuario_id=usuario_id,
+                usuario_id=usuario_uuid,
                 linea_solicitada_id=datos.validated_data["lineaSolicitadaId"],
             )
         )
@@ -82,6 +87,8 @@ class SolicitudRegistroListView(APIView):
 
 
 class SolicitudRegistroDetailView(APIView):
+    permission_classes = [EsAdminOJefeRuta]
+
     @extend_schema(request=ResolverSolicitudSerializer, responses=SolicitudRegistroSerializer)
     def patch(self, request, solicitud_id: int):
         datos = ResolverSolicitudSerializer(data=request.data)
