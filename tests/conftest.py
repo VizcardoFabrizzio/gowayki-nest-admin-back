@@ -1,5 +1,9 @@
+from datetime import UTC, datetime
+from uuid import uuid4
+
 import pytest
 
+import src.infrastructure.security.jwt as jwt_module
 from src.application.usecases.auth.login import LoginUseCase
 from src.application.usecases.auth.registro import RegistroUseCase
 from src.application.usecases.lineas.actualizar import ActualizarLineaUseCase
@@ -19,6 +23,10 @@ from src.application.usecases.unidades.listar_por_linea import ListarUnidadesPor
 from src.application.usecases.usuarios.actualizar_rol import ActualizarRolUseCase
 from src.application.usecases.usuarios.eliminar import EliminarUsuarioUseCase
 from src.application.usecases.usuarios.listar import ListarUsuariosUseCase
+from src.domain.entities.usuario import Usuario
+from src.domain.value_objects import Rol
+from src.infrastructure.security.jwt import generar_token
+from src.infrastructure.security.pin_hasher import PinHasher
 from tests.fakes import make_repos, wire
 
 
@@ -32,7 +40,9 @@ def repos():
 def api(monkeypatch, repos):
     r = repos
 
-    # patch view modules
+    # Override JWT auth to use fake repos.
+    monkeypatch.setattr(jwt_module, "_usuario_repository", lambda: r.usuarios)
+
     import src.presentation.views.auth as va
     import src.presentation.views.linea as vl
     import src.presentation.views.punto_control as vp
@@ -73,4 +83,23 @@ def api(monkeypatch, repos):
 
     from rest_framework.test import APIClient
 
-    return r, APIClient()
+    # Seed a default admin user and set its token.
+    uid = uuid4()
+    admin = Usuario(
+        id=uid,
+        nombre="Admin Test",
+        dni="99999999",
+        telefono="999999999",
+        email="admin@test.com",
+        foto_url=None,
+        rol=Rol.ADMIN,
+        is_online=False,
+        created_at=datetime.now(UTC),
+    )
+    r.usuarios.seed(admin, PinHasher.hash("1234"))
+    token = generar_token(admin)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    return r, client
