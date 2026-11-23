@@ -17,7 +17,7 @@ class SolicitudRegistroSerializer(serializers.Serializer):
 
 class CrearCambioRutaSerializer(serializers.Serializer):
     tipo = serializers.CharField()
-    usuarioId = serializers.CharField()
+    usuarioId = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     lineaSolicitadaId = serializers.IntegerField()
 
 

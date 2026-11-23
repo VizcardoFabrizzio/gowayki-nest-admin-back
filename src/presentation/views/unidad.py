@@ -16,6 +16,7 @@ from src.infrastructure.container import (
     listar_unidades_por_linea_use_case,
     listar_unidades_use_case,
 )
+from src.presentation.permissions import EsAdmin
 from src.presentation.serializers.unidad import (
     ActualizarUnidadSerializer,
     CrearUnidadSerializer,
@@ -45,6 +46,8 @@ def _unidad_json(unidad: Unidad) -> dict:
 
 
 class UnidadListView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(responses=UnidadSerializer(many=True))
     def get(self, request):
         unidades = listar_unidades_use_case().ejecutar()
@@ -66,6 +69,8 @@ class UnidadListView(APIView):
 
 
 class UnidadDetailView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(request=ActualizarUnidadSerializer, responses=UnidadSerializer)
     def patch(self, request, unidad_id: int):
         datos = ActualizarUnidadSerializer(data=request.data)
@@ -88,6 +93,8 @@ class UnidadDetailView(APIView):
 
 
 class UnidadPorLineaListView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(responses=UnidadSerializer(many=True))
     def get(self, request, linea_id: int):
         unidades = listar_unidades_por_linea_use_case().ejecutar(

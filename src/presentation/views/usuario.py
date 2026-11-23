@@ -12,6 +12,7 @@ from src.infrastructure.container import (
     eliminar_usuario_use_case,
     listar_usuarios_use_case,
 )
+from src.presentation.permissions import EsAdmin
 from src.presentation.serializers.usuario import ActualizarRolSerializer, UsuarioSerializer
 
 
@@ -31,6 +32,8 @@ def _usuario_json(usuario: Usuario) -> dict:
 
 
 class UsuarioListView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(responses=UsuarioSerializer(many=True))
     def get(self, request):
         usuarios = listar_usuarios_use_case().ejecutar()
@@ -38,6 +41,8 @@ class UsuarioListView(APIView):
 
 
 class UsuarioDetailView(APIView):
+    permission_classes = [EsAdmin]
+
     @extend_schema(request=ActualizarRolSerializer, responses=UsuarioSerializer)
     def patch(self, request, usuario_id: UUID):
         datos = ActualizarRolSerializer(data=request.data)
