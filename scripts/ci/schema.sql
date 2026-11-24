@@ -1,3 +1,6 @@
+-- Esquema minimo para CI: lo aplico solo en el workflow, no en la BD real.
+-- Hace DROP TABLE ... CASCADE, asi que no lo corran fuera de CI.
+
 DROP TABLE IF EXISTS "usuario" CASCADE;
 CREATE TABLE "usuario" (
   "id" text,
