@@ -7,22 +7,39 @@ echo "Health check"
 curl -fsS "$BASE/estado" | head -c 200
 echo
 
+echo "Rechazo sin token"
+if curl -fsS "$BASE/lineas" >/dev/null 2>&1; then
+  echo "ERROR: /lineas respondio sin token"
+  exit 1
+fi
+
 echo "Login"
-curl -fsS -X POST "$BASE/auth/login" \
+TOKEN=$(curl -fsS -X POST "$BASE/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"dni":"12345678","pin":"1234"}' | head -c 200
+  -d '{"dni":"12345678","pin":"1234"}' \
+  | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
+if [ -z "$TOKEN" ]; then
+  echo "ERROR: el login no devolvio token"
+  exit 1
+fi
+echo "Token obtenido (${#TOKEN} caracteres)"
 echo
 
+auth() {
+  curl -fsS -H "Authorization: Bearer $TOKEN" "$@"
+}
+
 echo "Listar lineas"
-curl -fsS "$BASE/lineas" | head -c 200
+auth "$BASE/lineas" | head -c 200
 echo
 
 echo "Listar unidades"
-curl -fsS "$BASE/unidades" | head -c 200
+auth "$BASE/unidades" | head -c 200
 echo
 
 echo "Listar solicitudes"
-curl -fsS "$BASE/solicitudes-registro?rol=ADMIN" | head -c 200
+auth "$BASE/solicitudes-registro" | head -c 200
 echo
 
 echo "Smoke OK"
