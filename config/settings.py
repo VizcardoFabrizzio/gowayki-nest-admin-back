@@ -1,14 +1,29 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-cambiar-en-produccion")
-DEBUG = os.getenv("DEBUG", "True") == "True"
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+DEBUG = os.getenv("DEBUG", "False") == "True"
+
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("SECRET_KEY es obligatoria en produccion.")
+    SECRET_KEY = "django-insecure-solo-desarrollo"
+
+if not DEBUG and (
+    SECRET_KEY.startswith("django-insecure-")
+    or SECRET_KEY in {"change-me", "change-me-in-production"}
+):
+    raise ImproperlyConfigured("Cambia SECRET_KEY antes de desplegar.")
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
