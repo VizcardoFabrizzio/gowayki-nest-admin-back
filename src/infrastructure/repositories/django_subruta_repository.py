@@ -5,11 +5,36 @@ from src.infrastructure.models.linea import Linea as LineaModel
 from src.infrastructure.models.subruta import Subruta as SubrutaModel
 
 
+def _normalizar(texto: str | None) -> str:
+    import unicodedata
+
+    return unicodedata.normalize("NFD", (texto or "").strip().lower()).encode(
+        "ascii", "ignore"
+    ).decode().strip()
+
+
 def pertenece_a_linea(subruta: SubrutaModel, linea: LineaModel) -> bool:
-    """La API Java guarda el código de línea en subruta.linea_codigo."""
-    if not subruta.linea_codigo:
-        return False
-    return subruta.linea_codigo.strip().upper() == codigo_de_linea(linea.nombre)
+    """La BD compartida guarda el código y el nombre de la línea en la subruta.
+
+    Las líneas del panel no siempre traen el código en el nombre (p. ej.
+    'Emarsistran' en vez de 'C9 Emarsistran'), por eso se compara también
+    por nombre.
+    """
+    codigo = codigo_de_linea(linea.nombre)
+    if (
+        subruta.linea_codigo
+        and codigo[:1].upper() == "C"
+        and codigo[1:].isdigit()
+        and subruta.linea_codigo.strip().upper() == codigo.upper()
+    ):
+        return True
+    nombre_linea = _normalizar(linea.nombre)
+    nombre_subruta = _normalizar(getattr(subruta, "linea_nombre", None))
+    return bool(
+        nombre_linea
+        and nombre_subruta
+        and (nombre_linea == nombre_subruta or nombre_linea in nombre_subruta or nombre_subruta in nombre_linea)
+    )
 
 
 class DjangoSubrutaRepository(SubrutaRepository):

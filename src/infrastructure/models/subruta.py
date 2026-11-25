@@ -8,6 +8,7 @@ class Subruta(models.Model):
     codigo = models.CharField(max_length=50)
     nombre = models.CharField(max_length=255)
     linea_codigo = models.CharField(max_length=20, null=True, blank=True)
+    linea_nombre = models.CharField(max_length=100, null=True, blank=True)
     activa = models.BooleanField(default=True)
 
     class Meta:
