@@ -13,6 +13,7 @@ class Unidad(models.Model):
         db_column="linea_id",
         related_name="unidades",
     )
+    subruta_id = models.IntegerField(null=True, blank=True)
     estado = models.CharField(max_length=20, default="OPERATIVA")
     created_at = models.DateTimeField(auto_now_add=True)
 

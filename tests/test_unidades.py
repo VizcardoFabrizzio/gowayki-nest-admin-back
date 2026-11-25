@@ -35,28 +35,37 @@ def _linea(repos, nombre="L1"):
 
 def test_crear_ok(repos):
     linea = _linea(repos)
-    uc = CrearUnidadUseCase(repos.unidades, repos.lineas)
+    uc = CrearUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
     u = uc.ejecutar(CrearUnidadDTO(placa="ABC-123", linea_id=linea.id))
     assert u.id is not None
     assert u.placa == "ABC-123"
 
 
+def test_crear_guarda_subruta(repos):
+    """La subruta elegida en el panel debe persistir para que la app la vea."""
+    linea = _linea(repos)
+    uc = CrearUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
+    u = uc.ejecutar(CrearUnidadDTO(placa="ABC-123", linea_id=linea.id, subruta_id=355))
+    assert u.subruta_id == 355
+    assert repos.unidades.find_by_id(u.id).subruta_id == 355
+
+
 def test_crear_placa_vacia(repos):
     linea = _linea(repos)
-    uc = CrearUnidadUseCase(repos.unidades, repos.lineas)
+    uc = CrearUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
     with pytest.raises(ValidacionError):
         uc.ejecutar(CrearUnidadDTO(placa="   ", linea_id=linea.id))
 
 
 def test_crear_linea_inexistente(repos):
-    uc = CrearUnidadUseCase(repos.unidades, repos.lineas)
+    uc = CrearUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
     with pytest.raises(NoEncontradoError):
         uc.ejecutar(CrearUnidadDTO(placa="ABC-123", linea_id=999))
 
 
 def test_crear_placa_duplicada(repos):
     linea = _linea(repos)
-    uc = CrearUnidadUseCase(repos.unidades, repos.lineas)
+    uc = CrearUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
     uc.ejecutar(CrearUnidadDTO(placa="ABC-123", linea_id=linea.id))
     with pytest.raises(ConflictoError):
         uc.ejecutar(CrearUnidadDTO(placa="ABC-123", linea_id=linea.id))
@@ -112,13 +121,31 @@ def test_actualizar_ok(repos):
             created_at=datetime.now(UTC),
         )
     )
-    uc = ActualizarUnidadUseCase(repos.unidades, repos.lineas)
-    updated = uc.ejecutar(u.id, ActualizarUnidadDTO(estado="INACTIVA"))
-    assert updated.estado == EstadoUnidad.INACTIVA
+    uc = ActualizarUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
+    updated = uc.ejecutar(u.id, ActualizarUnidadDTO(estado="BAJA"))
+    assert updated.estado == EstadoUnidad.BAJA
+
+
+def test_actualizar_guarda_subruta(repos):
+    linea = _linea(repos)
+    u = repos.unidades.save(
+        Unidad(
+            id=None,
+            numero_padron="P1",
+            placa="ABC-123",
+            linea_id=linea.id,
+            estado=EstadoUnidad.OPERATIVA,
+            created_at=datetime.now(UTC),
+        )
+    )
+    uc = ActualizarUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
+    updated = uc.ejecutar(u.id, ActualizarUnidadDTO(subruta_id=355, subruta_id_presente=True))
+    assert updated.subruta_id == 355
+    assert repos.unidades.find_by_id(u.id).subruta_id == 355
 
 
 def test_actualizar_no_existe(repos):
-    uc = ActualizarUnidadUseCase(repos.unidades, repos.lineas)
+    uc = ActualizarUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
     with pytest.raises(NoEncontradoError):
         uc.ejecutar(999, ActualizarUnidadDTO(placa="X"))
 
@@ -160,8 +187,9 @@ def test_eliminar_con_registros(repos):
     )
     repos.unidades.set_has_registros(u.id, True)
     uc = EliminarUnidadUseCase(repos.unidades)
-    with pytest.raises(ConflictoError):
-        uc.ejecutar(u.id)
+    resultado = uc.ejecutar(u.id)
+    assert resultado == "desactivada"
+    assert repos.unidades.find_by_id(u.id).estado == EstadoUnidad.BAJA
 
 
 # ---------- api ----------
@@ -209,3 +237,71 @@ def test_api_eliminar_unidad(api):
     )
     resp = client.delete(f"/api/unidades/{u.id}")
     assert resp.status_code == status.HTTP_204_NO_CONTENT
+
+
+# ---------- regresiones de la auditoría ----------
+
+
+def test_actualizar_limpia_subruta_con_null(repos):
+    linea = _linea(repos)
+    u = repos.unidades.save(
+        Unidad(
+            id=None,
+            numero_padron="P1",
+            placa="ABC-123",
+            linea_id=linea.id,
+            estado=EstadoUnidad.OPERATIVA,
+            created_at=datetime.now(UTC),
+            subruta_id=355,
+        )
+    )
+    uc = ActualizarUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
+
+    actualizada = uc.ejecutar(u.id, ActualizarUnidadDTO(subruta_id=None, subruta_id_presente=True))
+
+    assert actualizada.subruta_id is None
+    assert repos.unidades.find_by_id(u.id).subruta_id is None
+
+
+def test_api_actualizar_limpia_subruta_con_null(api):
+    repos, client = api
+    linea = _linea(repos)
+    creada = client.post(
+        "/api/unidades",
+        {"placa": "ABC-123", "lineaId": linea.id, "subrutaId": 355},
+        format="json",
+    )
+    assert creada.data["subrutaId"] == 355
+
+    resp = client.patch(f"/api/unidades/{creada.data['id']}", {"subrutaId": None}, format="json")
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["subrutaId"] is None
+    assert repos.unidades.find_by_id(creada.data["id"]).subruta_id is None
+
+
+def test_crear_unidad_rechaza_subruta_inexistente(repos):
+    linea = _linea(repos)
+    uc = CrearUnidadUseCase(repos.unidades, repos.lineas, repos.subrutas)
+    with pytest.raises(NoEncontradoError):
+        uc.ejecutar(CrearUnidadDTO(placa="ABC-123", linea_id=linea.id, subruta_id=999))
+
+
+def test_api_unidad_incluye_subruta_codigo(api):
+    repos, client = api
+    linea = _linea(repos)
+    resp = client.post(
+        "/api/unidades",
+        {"placa": "ABC-123", "lineaId": linea.id, "subrutaId": 355},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_201_CREATED
+    assert resp.data["subrutaCodigo"] == "SR-355"
+
+
+def test_estado_unidad_normaliza_alias_del_panel():
+    assert EstadoUnidad.del_panel("EN MANTENIMIENTO") == EstadoUnidad.MANTENIMIENTO
+    assert EstadoUnidad.del_panel("INACTIVA") == EstadoUnidad.BAJA
+    assert EstadoUnidad.del_panel(" activa ") == EstadoUnidad.OPERATIVA
+    with pytest.raises(ValidacionError):
+        EstadoUnidad.del_panel("DESCONOCIDO")

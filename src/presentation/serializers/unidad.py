@@ -15,6 +15,8 @@ class UnidadSerializer(serializers.Serializer):
     placa = serializers.CharField()
     lineaId = serializers.IntegerField()
     lineaNombre = serializers.CharField(allow_null=True)
+    subrutaId = serializers.IntegerField(allow_null=True)
+    subrutaCodigo = serializers.CharField(allow_null=True)
     estado = serializers.CharField()
     posicionActual = PosicionGpsSerializer(allow_null=True)
 
@@ -25,6 +27,7 @@ class CrearUnidadSerializer(serializers.Serializer):
     )
     placa = serializers.CharField(max_length=10)
     lineaId = serializers.IntegerField()
+    subrutaId = serializers.IntegerField(required=False, allow_null=True, default=None)
     estado = serializers.CharField(
         max_length=20, required=False, allow_blank=False, default="OPERATIVA"
     )
@@ -34,4 +37,5 @@ class ActualizarUnidadSerializer(serializers.Serializer):
     numeroPadron = serializers.CharField(max_length=10, required=False, allow_blank=True)
     placa = serializers.CharField(max_length=10, required=False, allow_blank=False)
     lineaId = serializers.IntegerField(required=False)
+    subrutaId = serializers.IntegerField(required=False, allow_null=True)
     estado = serializers.CharField(max_length=20, required=False, allow_blank=False)
