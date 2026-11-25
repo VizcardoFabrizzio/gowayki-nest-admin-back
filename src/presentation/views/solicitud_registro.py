@@ -16,7 +16,7 @@ from src.infrastructure.container import (
     listar_solicitudes_use_case,
     resolver_solicitud_use_case,
 )
-from src.presentation.permissions import EsAdminOJefeRuta
+from src.presentation.permissions import EsAdmin, EsAdminOJefeRuta
 from src.presentation.serializers.solicitud_registro import (
     CrearCambioRutaSerializer,
     ResolverSolicitudSerializer,
@@ -33,6 +33,9 @@ def _solicitud_json(solicitud: SolicitudRegistro) -> dict:
         "telefono": solicitud.telefono,
         "placaNumero": solicitud.placa_numero,
         "rutaTrabajo": solicitud.ruta_trabajo,
+        "lineaSolicitadaId": solicitud.linea_solicitada_id,
+        "subrutaSolicitadaId": solicitud.subruta_solicitada_id,
+        "usuarioId": str(solicitud.usuario_id) if solicitud.usuario_id else None,
         "estado": solicitud.estado.value,
         "usuarioAsignado": solicitud.usuario_asignado,
         "creadoEn": solicitud.creado_en,
@@ -47,11 +50,25 @@ class SolicitudRegistroListView(APIView):
     def get(self, request):
         usuario = request.user
         rol = getattr(usuario, "rol", "")
-        linea_id = None
+
+        # El jefe de ruta SIEMPRE usa la subruta de su token: el query param
+        # del cliente no es confiable y permitiría ver solicitudes ajenas.
+        subruta_id = None
         if rol == "JEFE_RUTA":
-            linea_id = getattr(usuario, "linea_id", None)
+            subruta_id = getattr(usuario, "subruta_id", None)
+        else:
+            subruta_raw = request.query_params.get("subrutaId")
+            if subruta_raw is not None and subruta_raw != "":
+                try:
+                    subruta_id = int(subruta_raw)
+                except (TypeError, ValueError):
+                    return Response(
+                        {"exito": False, "mensaje": "La subruta no es válida."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
         solicitudes = listar_solicitudes_use_case().ejecutar(
-            ListarSolicitudesDTO(rol=rol, linea_id=linea_id)
+            ListarSolicitudesDTO(rol=rol, subruta_id=subruta_id)
         )
         return Response([_solicitud_json(s) for s in solicitudes])
 
@@ -81,13 +98,15 @@ class SolicitudRegistroListView(APIView):
                 tipo=datos.validated_data["tipo"],
                 usuario_id=usuario_uuid,
                 linea_solicitada_id=datos.validated_data["lineaSolicitadaId"],
+                subruta_solicitada_id=datos.validated_data["subrutaSolicitadaId"],
             )
         )
         return Response(_solicitud_json(solicitud), status=status.HTTP_201_CREATED)
 
 
 class SolicitudRegistroDetailView(APIView):
-    permission_classes = [EsAdminOJefeRuta]
+    # Aprobar o rechazar solicitudes es potestad exclusiva del administrador.
+    permission_classes = [EsAdmin]
 
     @extend_schema(request=ResolverSolicitudSerializer, responses=SolicitudRegistroSerializer)
     def patch(self, request, solicitud_id: int):

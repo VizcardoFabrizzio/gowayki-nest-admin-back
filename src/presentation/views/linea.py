@@ -1,5 +1,6 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -33,6 +34,13 @@ def _linea_json(linea: Linea) -> dict:
 
 class LineaListView(APIView):
     permission_classes = [EsAdmin]
+
+    # El registro público necesita el catálogo de empresas/líneas. Solo el
+    # listado es público; crear, editar y borrar siguen exigiendo ADMIN.
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return super().get_permissions()
 
     @extend_schema(responses=LineaSerializer(many=True))
     def get(self, request):

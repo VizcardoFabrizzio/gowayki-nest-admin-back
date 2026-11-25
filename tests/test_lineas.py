@@ -124,6 +124,32 @@ def test_api_listar_lineas(api):
     assert len(resp.data) == 1
 
 
+def test_api_listar_lineas_sin_autenticacion(api):
+    from rest_framework.test import APIClient
+
+    repos, _client = api
+    _linea(repos)
+    publico = APIClient()
+
+    resp = publico.get("/api/lineas")
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.data) == 1
+
+
+def test_api_crear_linea_sin_autenticacion(api):
+    from rest_framework.test import APIClient
+
+    publico = APIClient()
+
+    resp = publico.post("/api/lineas", {"nombre": "Nueva"}, format="json")
+
+    assert resp.status_code in {
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN,
+    }
+
+
 def test_api_eliminar_linea(api):
     repos, client = api
     linea = _linea(repos)

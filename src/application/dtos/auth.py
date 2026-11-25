@@ -15,4 +15,5 @@ class RegistroDTO:
     email: str | None
     pin: str
     linea_id: int | None = None
+    subruta_id: int | None = None
     rol: str = "JEFE_RUTA"

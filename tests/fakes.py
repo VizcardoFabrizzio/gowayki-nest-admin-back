@@ -1,10 +1,12 @@
-from dataclasses import dataclass
-from datetime import datetime
+from contextlib import AbstractContextManager, contextmanager
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from uuid import UUID
 
 from src.domain.entities.linea import Linea
 from src.domain.entities.punto_control import PuntoControl
 from src.domain.entities.solicitud_registro import SolicitudRegistro
+from src.domain.entities.subruta import Subruta
 from src.domain.entities.unidad import Unidad
 from src.domain.entities.usuario import Usuario
 from src.domain.exceptions import ConflictoError
@@ -13,12 +15,15 @@ from src.domain.repositories.punto_control_repository import PuntoControlReposit
 from src.domain.repositories.solicitud_registro_repository import (
     SolicitudRegistroRepository,
 )
+from src.domain.repositories.subruta_repository import SubrutaRepository
 from src.domain.repositories.unidad_repository import UnidadRepository
 from src.domain.repositories.usuario_repository import (
     CredencialesUsuario,
     UsuarioRepository,
 )
-from src.domain.value_objects import Rol
+from src.domain.servicios.codigo_linea import codigo_de_linea
+from src.domain.transacciones import GestorTransacciones
+from src.domain.value_objects import EstadoUnidad, Rol
 
 
 @dataclass
@@ -28,21 +33,91 @@ class Repos:
     unidades: "FakeUnidadRepository"
     puntos: "FakePuntoControlRepository"
     solicitudes: "FakeSolicitudRegistroRepository"
+    subrutas: "FakeSubrutaRepository"
+    transacciones: "FakeGestorTransacciones"
 
 
 def make_repos() -> Repos:
     lineas = FakeLineaRepository()
-    unidades = FakeUnidadRepository(lineas)
+    subrutas = FakeSubrutaRepository(lineas)
+    unidades = FakeUnidadRepository(lineas, subrutas)
     usuarios = FakeUsuarioRepository(lineas)
     puntos = FakePuntoControlRepository(lineas)
     solicitudes = FakeSolicitudRegistroRepository()
+    # Subrutas usadas por la suite existente; los tests nuevas pueden sembrar más.
+    for subruta_id, linea_codigo in (
+        (1, "L1"),
+        (5, "L1"),
+        (6, "L1"),
+        (7, "L2"),
+        (42, "L1"),
+        (355, "L1"),
+    ):
+        subrutas.seed(
+            Subruta(
+                id=subruta_id,
+                codigo=f"SR-{subruta_id}",
+                nombre=f"Subruta {subruta_id}",
+                linea_codigo=linea_codigo,
+                activa=True,
+            )
+        )
     return Repos(
         usuarios=usuarios,
         lineas=lineas,
         unidades=unidades,
         puntos=puntos,
         solicitudes=solicitudes,
+        subrutas=subrutas,
+        transacciones=FakeGestorTransacciones(),
     )
+
+
+class FakeSubrutaRepository(SubrutaRepository):
+    def __init__(self, lineas: "FakeLineaRepository") -> None:
+        self._items: dict[int, Subruta] = {}
+        self._lineas = lineas
+
+    def seed(self, subruta: Subruta) -> None:
+        self._items[subruta.id] = subruta
+
+    def find_by_id(self, subruta_id: int) -> Subruta | None:
+        return self._items.get(subruta_id)
+
+    def find_activa_de_linea(self, subruta_id: int, linea_id: int) -> Subruta | None:
+        subruta = self._items.get(subruta_id)
+        linea = self._lineas.find_by_id(linea_id)
+        if (
+            subruta is None
+            or not subruta.activa
+            or linea is None
+            or not subruta.linea_codigo
+            or subruta.linea_codigo.strip().upper() != codigo_de_linea(linea.nombre)
+        ):
+            return None
+        return subruta
+
+    def find_codigos(self, subruta_ids: list[int]) -> dict[int, str]:
+        return {
+            subruta_id: self._items[subruta_id].codigo
+            for subruta_id in subruta_ids
+            if subruta_id in self._items
+        }
+
+
+class FakeGestorTransacciones(GestorTransacciones):
+    def __init__(self) -> None:
+        self.activo = False
+        self.llamadas = 0
+
+    @contextmanager
+    def atomic(self) -> AbstractContextManager[None]:
+        self.llamadas += 1
+        self.activo = True
+        try:
+            yield
+        finally:
+            self.activo = False
 
 
 class FakeLineaRepository(LineaRepository):
@@ -83,11 +158,20 @@ class FakeLineaRepository(LineaRepository):
 
 
 class FakeUnidadRepository(UnidadRepository):
-    def __init__(self, lineas: FakeLineaRepository) -> None:
+    def __init__(
+        self, lineas: FakeLineaRepository, subrutas: FakeSubrutaRepository | None = None
+    ) -> None:
         self._items: dict[int, Unidad] = {}
         self._next = 1
         self._lineas = lineas
+        self._subrutas = subrutas
         self._registros: set[int] = set()
+
+    def _enriquecer(self, unidad: Unidad) -> Unidad:
+        if unidad.subruta_id is None or self._subrutas is None:
+            return unidad
+        subruta = self._subrutas.find_by_id(unidad.subruta_id)
+        return replace(unidad, subruta_codigo=subruta.codigo if subruta else None)
 
     def set_has_registros(self, unidad_id: int, value: bool = True) -> None:
         if value:
@@ -96,13 +180,14 @@ class FakeUnidadRepository(UnidadRepository):
             self._registros.discard(unidad_id)
 
     def find_all(self) -> list[Unidad]:
-        return list(self._items.values())
+        return [self._enriquecer(u) for u in self._items.values()]
 
     def find_by_id(self, unidad_id: int) -> Unidad | None:
-        return self._items.get(unidad_id)
+        unidad = self._items.get(unidad_id)
+        return self._enriquecer(unidad) if unidad else None
 
     def find_by_linea(self, linea_id: int) -> list[Unidad]:
-        return [u for u in self._items.values() if u.linea_id == linea_id]
+        return [self._enriquecer(u) for u in self._items.values() if u.linea_id == linea_id]
 
     def save(self, unidad: Unidad) -> Unidad:
         if unidad.id is None:
@@ -115,6 +200,7 @@ class FakeUnidadRepository(UnidadRepository):
                 created_at=unidad.created_at,
                 linea_nombre=unidad.linea_nombre,
                 posicion_actual=unidad.posicion_actual,
+                subruta_id=unidad.subruta_id,
             )
             self._next += 1
         # refresh linea_nombre
@@ -129,12 +215,28 @@ class FakeUnidadRepository(UnidadRepository):
                 created_at=unidad.created_at,
                 linea_nombre=linea.nombre,
                 posicion_actual=unidad.posicion_actual,
+                subruta_id=unidad.subruta_id,
             )
         self._items[unidad.id] = unidad
-        return unidad
+        return self._enriquecer(unidad)
 
     def delete(self, unidad_id: int) -> None:
         self._items.pop(unidad_id, None)
+
+    def desactivar(self, unidad_id: int) -> None:
+        if unidad_id in self._items:
+            u = self._items[unidad_id]
+            self._items[unidad_id] = Unidad(
+                id=u.id,
+                numero_padron=u.numero_padron,
+                placa=u.placa,
+                linea_id=u.linea_id,
+                estado=EstadoUnidad.BAJA,
+                created_at=u.created_at,
+                linea_nombre=u.linea_nombre,
+                posicion_actual=u.posicion_actual,
+                subruta_id=u.subruta_id,
+            )
 
     def exists_by_id(self, unidad_id: int) -> bool:
         return unidad_id in self._items
@@ -191,6 +293,7 @@ class FakeSolicitudRegistroRepository(SolicitudRegistroRepository):
                 ruta_trabajo=solicitud.ruta_trabajo,
                 placa_numero=solicitud.placa_numero,
                 linea_solicitada_id=solicitud.linea_solicitada_id,
+                subruta_solicitada_id=solicitud.subruta_solicitada_id,
                 usuario_id=solicitud.usuario_id,
                 pin_hash=solicitud.pin_hash,
                 usuario_asignado=solicitud.usuario_asignado,
@@ -219,18 +322,21 @@ class FakeUsuarioRepository(UsuarioRepository):
         self._items: dict[UUID, Usuario] = {}
         self._auth: dict[UUID, CredencialesUsuario] = {}
         self._lineas_rel: dict[UUID, int | None] = {}
+        self._subrutas_rel: dict[UUID, int | None] = {}
         self._lineas = lineas
 
-    def _linea_info(self, usuario_id: UUID) -> tuple[int | None, str | None]:
+    def _linea_info(
+        self, usuario_id: UUID
+    ) -> tuple[int | None, str | None, int | None, str | None]:
         linea_id = self._lineas_rel.get(usuario_id)
         if linea_id is None:
-            return None, None
+            return None, None, None, None
         linea = self._lineas.find_by_id(linea_id)
-        return linea_id, (linea.nombre if linea else None)
+        subruta_id = getattr(self, "_subrutas_rel", {}).get(usuario_id)
+        return linea_id, (linea.nombre if linea else None), subruta_id, None
 
     def _to_domain(self, usuario: Usuario) -> Usuario:
-        linea_id, linea_nombre = self._linea_info(usuario.id)
-        # rebuild with linea info
+        linea_id, linea_nombre, subruta_id, subruta_nombre = self._linea_info(usuario.id)
         return Usuario(
             id=usuario.id,
             nombre=usuario.nombre,
@@ -243,12 +349,16 @@ class FakeUsuarioRepository(UsuarioRepository):
             created_at=usuario.created_at,
             linea_id=linea_id,
             linea_nombre=linea_nombre,
+            subruta_id=subruta_id,
+            subruta_nombre=subruta_nombre,
+            activo=usuario.activo,
+            token_version=usuario.token_version,
+            eliminado_en=usuario.eliminado_en,
+            reactivado_en=usuario.reactivado_en,
         )
 
     def find_all(self) -> list[Usuario]:
-        out = []
-        for u in self._items.values():
-            out.append(self._to_domain(u))
+        out = [self._to_domain(u) for u in self._items.values() if u.activo]
         out.sort(key=lambda x: x.nombre)
         return out
 
@@ -285,6 +395,7 @@ class FakeUsuarioRepository(UsuarioRepository):
         usuario: Usuario,
         pin_hash: str | None = None,
         linea_id: int | None = None,
+        subruta_id: int | None = None,
     ) -> Usuario:
         # conflict checks for new-ish: check dni/telefono/email excluding self
         for uid, u in self._items.items():
@@ -312,8 +423,16 @@ class FakeUsuarioRepository(UsuarioRepository):
             pass
         if linea_id is not None:
             self._lineas_rel[usuario.id] = linea_id
+        if subruta_id is not None:
+            self._subrutas_rel[usuario.id] = subruta_id
         # if usuario has linea_id attribute? entity has linea_id; but save uses param
         return self._to_domain(usuario)
+
+    def asignar_subruta(self, usuario_id: UUID, subruta_id: int) -> Usuario | None:
+        if usuario_id not in self._lineas_rel or self._lineas_rel[usuario_id] is None:
+            return None
+        self._subrutas_rel[usuario_id] = subruta_id
+        return self.find_by_id(usuario_id)
 
     def update_login_state(
         self,
@@ -351,8 +470,19 @@ class FakeUsuarioRepository(UsuarioRepository):
         self._auth.pop(usuario_id, None)
         self._lineas_rel.pop(usuario_id, None)
 
+    def desactivar(self, usuario_id: UUID) -> None:
+        actual = self._items.get(usuario_id)
+        if actual is not None:
+            self._items[usuario_id] = replace(
+                actual,
+                activo=False,
+                is_online=False,
+                token_version=actual.token_version + 1,
+                eliminado_en=datetime.now(UTC),
+            )
+
     def count_admins(self) -> int:
-        return sum(1 for u in self._items.values() if u.rol == Rol.ADMIN)
+        return sum(1 for u in self._items.values() if u.rol == Rol.ADMIN and u.activo)
 
     def exists_by_dni(self, dni: str, exclude_id: UUID | None = None) -> bool:
         for uid, u in self._items.items():
@@ -379,7 +509,13 @@ class FakeUsuarioRepository(UsuarioRepository):
         return False
 
     # helper for tests to seed auth
-    def seed(self, usuario: Usuario, pin_hash: str, linea_id: int | None = None) -> None:
+    def seed(
+        self,
+        usuario: Usuario,
+        pin_hash: str,
+        linea_id: int | None = None,
+        subruta_id: int | None = None,
+    ) -> None:
         self._items[usuario.id] = usuario
         self._auth[usuario.id] = CredencialesUsuario(
             id=usuario.id,
@@ -389,6 +525,8 @@ class FakeUsuarioRepository(UsuarioRepository):
         )
         if linea_id is not None:
             self._lineas_rel[usuario.id] = linea_id
+        if subruta_id is not None:
+            self._subrutas_rel[usuario.id] = subruta_id
 
 
 # wire has_unidades to use unidades repo

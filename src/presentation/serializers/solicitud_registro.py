@@ -9,6 +9,9 @@ class SolicitudRegistroSerializer(serializers.Serializer):
     telefono = serializers.CharField(allow_null=True)
     placaNumero = serializers.CharField(allow_null=True)
     rutaTrabajo = serializers.CharField(allow_null=True)
+    lineaSolicitadaId = serializers.IntegerField(allow_null=True)
+    subrutaSolicitadaId = serializers.IntegerField(allow_null=True)
+    usuarioId = serializers.UUIDField(allow_null=True)
     estado = serializers.CharField()
     usuarioAsignado = serializers.CharField(allow_null=True)
     creadoEn = serializers.DateTimeField()
@@ -19,6 +22,7 @@ class CrearCambioRutaSerializer(serializers.Serializer):
     tipo = serializers.CharField()
     usuarioId = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     lineaSolicitadaId = serializers.IntegerField()
+    subrutaSolicitadaId = serializers.IntegerField()
 
 
 class ResolverSolicitudSerializer(serializers.Serializer):

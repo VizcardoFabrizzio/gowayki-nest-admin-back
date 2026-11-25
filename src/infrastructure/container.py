@@ -15,13 +15,16 @@ from src.application.usecases.unidades.eliminar import EliminarUnidadUseCase
 from src.application.usecases.unidades.listar import ListarUnidadesUseCase
 from src.application.usecases.unidades.listar_por_linea import ListarUnidadesPorLineaUseCase
 from src.application.usecases.usuarios.actualizar_rol import ActualizarRolUseCase
+from src.application.usecases.usuarios.actualizar_subruta import ActualizarSubrutaUseCase
 from src.application.usecases.usuarios.eliminar import EliminarUsuarioUseCase
 from src.application.usecases.usuarios.listar import ListarUsuariosUseCase
 from src.domain.repositories.linea_repository import LineaRepository
 from src.domain.repositories.punto_control_repository import PuntoControlRepository
 from src.domain.repositories.solicitud_registro_repository import SolicitudRegistroRepository
+from src.domain.repositories.subruta_repository import SubrutaRepository
 from src.domain.repositories.unidad_repository import UnidadRepository
 from src.domain.repositories.usuario_repository import UsuarioRepository
+from src.domain.transacciones import GestorTransacciones
 from src.infrastructure.repositories.django_linea_repository import DjangoLineaRepository
 from src.infrastructure.repositories.django_punto_control_repository import (
     DjangoPuntoControlRepository,
@@ -29,8 +32,10 @@ from src.infrastructure.repositories.django_punto_control_repository import (
 from src.infrastructure.repositories.django_solicitud_registro_repository import (
     DjangoSolicitudRegistroRepository,
 )
+from src.infrastructure.repositories.django_subruta_repository import DjangoSubrutaRepository
 from src.infrastructure.repositories.django_unidad_repository import DjangoUnidadRepository
 from src.infrastructure.repositories.django_usuario_repository import DjangoUsuarioRepository
+from src.infrastructure.transacciones import TransaccionesDjango
 
 
 def usuario_repository() -> UsuarioRepository:
@@ -39,6 +44,14 @@ def usuario_repository() -> UsuarioRepository:
 
 def solicitud_registro_repository() -> SolicitudRegistroRepository:
     return DjangoSolicitudRegistroRepository()
+
+
+def subruta_repository() -> SubrutaRepository:
+    return DjangoSubrutaRepository()
+
+
+def gestor_transacciones() -> GestorTransacciones:
+    return TransaccionesDjango()
 
 
 def login_use_case() -> LoginUseCase:
@@ -50,6 +63,7 @@ def registro_use_case() -> RegistroUseCase:
         usuario_repository(),
         solicitud_registro_repository(),
         linea_repository(),
+        subruta_repository(),
     )
 
 
@@ -61,6 +75,10 @@ def actualizar_rol_use_case() -> ActualizarRolUseCase:
     return ActualizarRolUseCase(usuario_repository())
 
 
+def actualizar_subruta_use_case() -> ActualizarSubrutaUseCase:
+    return ActualizarSubrutaUseCase(usuario_repository())
+
+
 def eliminar_usuario_use_case() -> EliminarUsuarioUseCase:
     return EliminarUsuarioUseCase(usuario_repository())
 
@@ -70,7 +88,7 @@ def linea_repository() -> LineaRepository:
 
 
 def unidad_repository() -> UnidadRepository:
-    return DjangoUnidadRepository()
+    return DjangoUnidadRepository(subruta_repository())
 
 
 def punto_control_repository() -> PuntoControlRepository:
@@ -110,11 +128,11 @@ def listar_unidades_por_linea_use_case() -> ListarUnidadesPorLineaUseCase:
 
 
 def crear_unidad_use_case() -> CrearUnidadUseCase:
-    return CrearUnidadUseCase(unidad_repository(), linea_repository())
+    return CrearUnidadUseCase(unidad_repository(), linea_repository(), subruta_repository())
 
 
 def actualizar_unidad_use_case() -> ActualizarUnidadUseCase:
-    return ActualizarUnidadUseCase(unidad_repository(), linea_repository())
+    return ActualizarUnidadUseCase(unidad_repository(), linea_repository(), subruta_repository())
 
 
 def eliminar_unidad_use_case() -> EliminarUnidadUseCase:
@@ -130,6 +148,7 @@ def crear_cambio_ruta_use_case() -> CrearCambioRutaUseCase:
         solicitud_registro_repository(),
         usuario_repository(),
         linea_repository(),
+        subruta_repository(),
     )
 
 
@@ -138,4 +157,6 @@ def resolver_solicitud_use_case() -> ResolverSolicitudUseCase:
         solicitud_registro_repository(),
         usuario_repository(),
         linea_repository(),
+        gestor_transacciones(),
+        subruta_repository(),
     )

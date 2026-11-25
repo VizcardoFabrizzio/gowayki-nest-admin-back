@@ -5,6 +5,7 @@ from src.domain.entities.solicitud_registro import SolicitudRegistro
 from src.domain.exceptions import ConflictoError, ValidacionError
 from src.domain.repositories.linea_repository import LineaRepository
 from src.domain.repositories.solicitud_registro_repository import SolicitudRegistroRepository
+from src.domain.repositories.subruta_repository import SubrutaRepository
 from src.domain.repositories.usuario_repository import UsuarioRepository
 from src.domain.value_objects import Dni, EstadoSolicitud, Pin, Rol, Telefono, TipoSolicitud
 from src.infrastructure.security.pin_hasher import PinHasher
@@ -16,10 +17,12 @@ class RegistroUseCase:
         usuarios: UsuarioRepository,
         solicitudes: SolicitudRegistroRepository,
         lineas: LineaRepository,
+        subrutas: SubrutaRepository,
     ) -> None:
         self._usuarios = usuarios
         self._solicitudes = solicitudes
         self._lineas = lineas
+        self._subrutas = subrutas
 
     def ejecutar(self, datos: RegistroDTO) -> SolicitudRegistro:
         nombre = (datos.nombre or "").strip()
@@ -40,25 +43,36 @@ class RegistroUseCase:
         linea = self._lineas.find_by_id(datos.linea_id)
         if linea is None:
             raise ValidacionError("La ruta seleccionada no existe.")
-
-        if self._usuarios.exists_by_dni(str(dni)) or self._solicitudes.find_pendiente_by_dni(
-            str(dni)
+        if datos.subruta_id is not None and (
+            self._subrutas.find_activa_de_linea(datos.subruta_id, linea.id) is None
         ):
-            raise ConflictoError("Ya existe una cuenta o solicitud con ese DNI.")
-        if self._usuarios.exists_by_telefono(str(telefono)):
+            raise ValidacionError("La subruta no existe, no está activa o no pertenece a la ruta.")
+
+        existente = self._usuarios.find_by_dni(str(dni))
+        if existente is not None and existente.activo:
+            raise ConflictoError("Ya existe una cuenta con ese DNI.")
+        if self._solicitudes.find_pendiente_by_dni(str(dni)):
+            raise ConflictoError("Ya existe una solicitud pendiente con ese DNI.")
+
+        # Un dato de contacto no puede repetirse aunque la otra cuenta esté dada de baja;
+        # solo se tolera si pertenece a la cuenta que se quiere reactivar.
+        objetivo_id = existente.id if existente is not None else None
+        if self._usuarios.exists_by_telefono(str(telefono), exclude_id=objetivo_id):
             raise ConflictoError("El teléfono ya está registrado.")
-        if email and self._usuarios.exists_by_email(email):
+        if email and self._usuarios.exists_by_email(email, exclude_id=objetivo_id):
             raise ConflictoError("El email ya está registrado.")
 
         solicitud = SolicitudRegistro(
             id=None,
             tipo=TipoSolicitud.JEFE_RUTA,
             dni=str(dni),
+            usuario_id=existente.id if existente is not None else None,
             nombre_completo=nombre,
             telefono=str(telefono),
             email=email,
             ruta_trabajo=linea.nombre,
             linea_solicitada_id=linea.id,
+            subruta_solicitada_id=datos.subruta_id,
             pin_hash=PinHasher.hash(str(pin)),
             estado=EstadoSolicitud.PENDIENTE,
             creado_en=datetime.now(UTC),
