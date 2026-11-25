@@ -12,23 +12,32 @@ class Rol(StrEnum):
     JEFE_RUTA = "JEFE_RUTA"
 
 
+ESTADOS_UNIDAD_ALIAS = {
+    "ACTIVA": "OPERATIVA",
+    "ACTIVO": "OPERATIVA",
+    "OPERATIVO": "OPERATIVA",
+    "EN MANTENIMIENTO": "MANTENIMIENTO",
+    "MANTENIMIENTO": "MANTENIMIENTO",
+    "INACTIVA": "BAJA",
+    "INACTIVO": "BAJA",
+    "DE BAJA": "BAJA",
+    "BAJA": "BAJA",
+}
+
+
 class EstadoUnidad(StrEnum):
     OPERATIVA = "OPERATIVA"
-    INACTIVA = "INACTIVA"
     MANTENIMIENTO = "MANTENIMIENTO"
     BAJA = "BAJA"
 
     @classmethod
     def del_panel(cls, valor: str) -> "EstadoUnidad":
+        texto = " ".join((valor or "").strip().upper().split())
+        alias = ESTADOS_UNIDAD_ALIAS.get(texto, texto)
         try:
-            estado = cls(valor)
+            return cls(alias)
         except ValueError as exc:
-            raise ValidacionError(
-                "El estado debe ser OPERATIVA, INACTIVA o MANTENIMIENTO."
-            ) from exc
-        if estado is cls.BAJA:
-            raise ValidacionError("El estado debe ser OPERATIVA, INACTIVA o MANTENIMIENTO.")
-        return estado
+            raise ValidacionError("El estado debe ser OPERATIVA, MANTENIMIENTO o BAJA.") from exc
 
 
 class TipoSolicitud(StrEnum):

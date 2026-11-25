@@ -9,6 +9,8 @@ class UsuarioMapper:
         modelo: UsuarioModel,
         linea_id: int | None = None,
         linea_nombre: str | None = None,
+        subruta_id: int | None = None,
+        subruta_nombre: str | None = None,
     ) -> Usuario:
         return Usuario(
             id=modelo.id,
@@ -22,6 +24,12 @@ class UsuarioMapper:
             created_at=modelo.created_at,
             linea_id=linea_id,
             linea_nombre=linea_nombre,
+            subruta_id=subruta_id,
+            subruta_nombre=subruta_nombre,
+            activo=modelo.activo,
+            token_version=modelo.token_version,
+            eliminado_en=modelo.eliminado_en,
+            reactivado_en=modelo.reactivado_en,
         )
 
     @staticmethod
@@ -36,4 +44,7 @@ class UsuarioMapper:
             rol=usuario.rol.value,
             is_online=usuario.is_online,
             created_at=usuario.created_at,
+            activo=usuario.activo,
+            eliminado_en=usuario.eliminado_en,
+            reactivado_en=usuario.reactivado_en,
         )

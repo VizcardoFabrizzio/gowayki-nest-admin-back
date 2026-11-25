@@ -26,6 +26,8 @@ def generar_token(usuario: Usuario) -> str:
         "rol": usuario.rol.value,
         "linea_id": usuario.linea_id,
         "linea_nombre": usuario.linea_nombre,
+        "subruta_id": getattr(usuario, "subruta_id", None),
+        "token_version": getattr(usuario, "token_version", 0),
         "iat": ahora,
         "exp": ahora + datetime.timedelta(hours=24),
     }
@@ -50,6 +52,8 @@ class UsuarioAutenticado:
             "is_online",
             "linea_id",
             "linea_nombre",
+            "subruta_id",
+            "token_version",
         ):
             setattr(self, attr, getattr(usuario, attr))
 
@@ -87,6 +91,10 @@ class AutenticacionJWT(authentication.BaseAuthentication):
         usuario = _usuario_repository().find_by_id(user_uuid)
         if usuario is None:
             raise exceptions.AuthenticationFailed("Usuario no encontrado.")
+        if not usuario.activo:
+            raise exceptions.AuthenticationFailed("Cuenta inactiva.")
+        if payload.get("token_version", 0) != getattr(usuario, "token_version", 0):
+            raise exceptions.AuthenticationFailed("Token revocado, inicia sesión de nuevo.")
 
         return (UsuarioAutenticado(usuario), payload)
 

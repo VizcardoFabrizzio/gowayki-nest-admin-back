@@ -7,6 +7,7 @@ class CrearUnidadDTO:
     placa: str = ""
     linea_id: int | None = None
     estado: str = "OPERATIVA"
+    subruta_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,8 @@ class ActualizarUnidadDTO:
     placa: str | None = None
     linea_id: int | None = None
     estado: str | None = None
+    subruta_id: int | None = None
+    subruta_id_presente: bool = False
 
 
 @dataclass(frozen=True)

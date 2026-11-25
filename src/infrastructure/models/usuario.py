@@ -16,6 +16,10 @@ class Usuario(models.Model):
     intentos_fallidos = models.IntegerField(default=0)
     bloqueado_hasta = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    activo = models.BooleanField(default=True)
+    token_version = models.IntegerField(default=0)
+    eliminado_en = models.DateTimeField(null=True, blank=True)
+    reactivado_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False

@@ -25,6 +25,10 @@ class UnidadRepository(ABC):
         pass
 
     @abstractmethod
+    def desactivar(self, unidad_id: int) -> None:
+        pass
+
+    @abstractmethod
     def exists_by_id(self, unidad_id: int) -> bool:
         pass
 

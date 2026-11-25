@@ -1,8 +1,7 @@
--- Esquema minimo para CI: lo aplico solo en el workflow, no en la BD real.
--- Hace DROP TABLE ... CASCADE, asi que no lo corran fuera de CI.
+-- Esquema minimo para CI: solo se aplica en el workflow, nunca en la BD real.
+-- Aditivo e idempotente: no borra tablas ni columnas.
 
-DROP TABLE IF EXISTS "usuario" CASCADE;
-CREATE TABLE "usuario" (
+CREATE TABLE IF NOT EXISTS "usuario" (
   "id" text,
   "nombre" text,
   "dni" text,
@@ -16,9 +15,12 @@ CREATE TABLE "usuario" (
   "bloqueado_hasta" text,
   "created_at" text
 );
+ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "activo" boolean NOT NULL DEFAULT true;
+ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "token_version" integer NOT NULL DEFAULT 0;
+ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "eliminado_en" timestamptz;
+ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "reactivado_en" timestamptz;
 
-DROP TABLE IF EXISTS "linea" CASCADE;
-CREATE TABLE "linea" (
+CREATE TABLE IF NOT EXISTS "linea" (
   "id" text,
   "nombre" text,
   "origen" text,
@@ -28,8 +30,7 @@ CREATE TABLE "linea" (
   "created_at" text
 );
 
-DROP TABLE IF EXISTS "unidad" CASCADE;
-CREATE TABLE "unidad" (
+CREATE TABLE IF NOT EXISTS "unidad" (
   "id" text,
   "numero_padron" text,
   "placa" text,
@@ -37,9 +38,9 @@ CREATE TABLE "unidad" (
   "estado" text,
   "created_at" text
 );
+ALTER TABLE "unidad" ADD COLUMN IF NOT EXISTS "subruta_id" integer;
 
-DROP TABLE IF EXISTS "punto_control" CASCADE;
-CREATE TABLE "punto_control" (
+CREATE TABLE IF NOT EXISTS "punto_control" (
   "id" text,
   "linea_id" text,
   "nombre" text,
@@ -49,14 +50,13 @@ CREATE TABLE "punto_control" (
   "created_at" text
 );
 
-DROP TABLE IF EXISTS "usuario_linea" CASCADE;
-CREATE TABLE "usuario_linea" (
+CREATE TABLE IF NOT EXISTS "usuario_linea" (
   "usuario_id" text,
   "linea_id" text
 );
+ALTER TABLE "usuario_linea" ADD COLUMN IF NOT EXISTS "subruta_id" integer;
 
-DROP TABLE IF EXISTS "solicitud_registro" CASCADE;
-CREATE TABLE "solicitud_registro" (
+CREATE TABLE IF NOT EXISTS "solicitud_registro" (
   "id" text,
   "tipo" text,
   "dni" text,
@@ -72,4 +72,24 @@ CREATE TABLE "solicitud_registro" (
   "usuario_asignado" text,
   "creado_en" text,
   "actualizado_en" text
+);
+ALTER TABLE "solicitud_registro" ADD COLUMN IF NOT EXISTS "subruta_solicitada_id" integer;
+
+CREATE TABLE IF NOT EXISTS "subruta" (
+  "id" integer PRIMARY KEY,
+  "codigo" varchar(50) NOT NULL,
+  "nombre" varchar(255) NOT NULL,
+  "linea_codigo" varchar(20),
+  "activa" boolean NOT NULL DEFAULT true
+);
+
+-- Consultadas por has_registros al borrar una unidad.
+CREATE TABLE IF NOT EXISTS "asignacion_turno" (
+  "id" bigserial PRIMARY KEY,
+  "unidad_id" integer
+);
+
+CREATE TABLE IF NOT EXISTS "alerta_incidencia" (
+  "id" bigserial PRIMARY KEY,
+  "unidad_id" integer
 );

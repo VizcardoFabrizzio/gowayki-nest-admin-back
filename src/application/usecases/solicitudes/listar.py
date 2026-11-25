@@ -19,15 +19,17 @@ class ListarSolicitudesUseCase:
         solicitudes = self._repositorio.find_all()
 
         if rol == "ADMIN":
-            return [
-                solicitud for solicitud in solicitudes if solicitud.tipo is not TipoSolicitud.CHOFER
-            ]
+            # El admin ve TODAS las solicitudes, incluidas las de choferes.
+            return list(solicitudes)
 
-        if datos.linea_id is None:
-            raise ValidacionError("La línea es obligatoria para el jefe de ruta.")
+        if datos.subruta_id is None:
+            raise ValidacionError("La subruta es obligatoria para el jefe de ruta.")
         return [
             solicitud
             for solicitud in solicitudes
-            if solicitud.tipo is TipoSolicitud.CHOFER
-            and solicitud.linea_solicitada_id == datos.linea_id
+            if solicitud.estado.value == "PENDIENTE"
+            and solicitud.tipo in (TipoSolicitud.CHOFER, TipoSolicitud.CAMBIO_RUTA)
+            and solicitud.subruta_solicitada_id == datos.subruta_id
+            # Las solicitudes de un jefe las aprueba el administrador.
+            and solicitud.usuario_asignado != "ADMIN"
         ]

@@ -45,7 +45,13 @@ class UsuarioRepository(ABC):
         usuario: Usuario,
         pin_hash: str | None = None,
         linea_id: int | None = None,
+        subruta_id: int | None = None,
     ) -> Usuario:
+        pass
+
+    @abstractmethod
+    def asignar_subruta(self, usuario_id: UUID, subruta_id: int) -> Usuario | None:
+        """Asigna la subruta de un jefe. Devuelve None si no tiene línea asignada."""
         pass
 
     @abstractmethod
@@ -60,6 +66,11 @@ class UsuarioRepository(ABC):
 
     @abstractmethod
     def delete(self, usuario_id: UUID) -> None:
+        pass
+
+    @abstractmethod
+    def desactivar(self, usuario_id: UUID) -> None:
+        """Borrado lógico: deja el historial intacto y revoca el acceso."""
         pass
 
     @abstractmethod

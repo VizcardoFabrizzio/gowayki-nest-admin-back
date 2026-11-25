@@ -6,6 +6,7 @@ from uuid import UUID
 class ListarSolicitudesDTO:
     rol: str = ""
     linea_id: int | None = None
+    subruta_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -13,6 +14,7 @@ class CrearCambioRutaDTO:
     tipo: str = "CAMBIO_RUTA"
     usuario_id: UUID | None = None
     linea_solicitada_id: int | None = None
+    subruta_solicitada_id: int | None = None
 
 
 @dataclass(frozen=True)

@@ -15,4 +15,6 @@ class EliminarUsuarioUseCase:
             raise NoEncontradoError("El usuario no existe.")
         if usuario.rol == Rol.ADMIN and self._repositorio.count_admins() <= 1:
             raise ConflictoError("No se puede eliminar al último administrador.")
-        self._repositorio.delete(usuario_id)
+        # Borrado lógico: conservamos turnos, mensajes e historial. Las FK con
+        # RESTRICT impedían borrar la fila y hacerlo borraría datos de terceros.
+        self._repositorio.desactivar(usuario_id)

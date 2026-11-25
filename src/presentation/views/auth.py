@@ -28,6 +28,9 @@ def _usuario_json(usuario: Usuario) -> dict:
         "isOnline": usuario.is_online,
         "lineaId": usuario.linea_id,
         "lineaNombre": usuario.linea_nombre,
+        "subrutaId": usuario.subruta_id,
+        "subrutaDbId": usuario.subruta_id,
+        "subrutaNombre": usuario.subruta_nombre,
     }
 
 
@@ -68,6 +71,7 @@ class RegistroView(APIView):
                 email=datos.validated_data["email"],
                 pin=datos.validated_data["pin"],
                 linea_id=datos.validated_data["lineaId"],
+                subruta_id=datos.validated_data.get("subrutaId"),
                 rol=datos.validated_data["rol"],
             )
         )

@@ -14,6 +14,7 @@ class RegistroSerializer(serializers.Serializer):
     pin = serializers.CharField(required=False, allow_blank=True, default="", trim_whitespace=False)
     rol = serializers.CharField(required=False, allow_blank=True, default="JEFE_RUTA")
     lineaId = serializers.IntegerField(required=False, allow_null=True, default=None)
+    subrutaId = serializers.IntegerField(required=False, allow_null=True, default=None)
 
 
 class UsuarioSerializer(serializers.Serializer):
@@ -27,6 +28,8 @@ class UsuarioSerializer(serializers.Serializer):
     isOnline = serializers.BooleanField()
     lineaId = serializers.IntegerField(allow_null=True)
     lineaNombre = serializers.CharField(allow_null=True)
+    subrutaId = serializers.IntegerField(allow_null=True)
+    subrutaNombre = serializers.CharField(allow_null=True)
 
 
 class AuthResponseSerializer(serializers.Serializer):

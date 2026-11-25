@@ -14,3 +14,5 @@ class Unidad:
     created_at: datetime
     linea_nombre: str | None = None
     posicion_actual: PosicionGps | None = None
+    subruta_id: int | None = None
+    subruta_codigo: str | None = None

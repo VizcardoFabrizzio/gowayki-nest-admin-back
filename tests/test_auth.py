@@ -8,12 +8,14 @@ from src.application.dtos.auth import RegistroDTO
 from src.application.usecases.auth.login import LoginUseCase
 from src.application.usecases.auth.registro import RegistroUseCase
 from src.domain.entities.linea import Linea
+from src.domain.entities.subruta import Subruta
 from src.domain.entities.usuario import Usuario
 from src.domain.exceptions import (
     AccesoDenegadoError,
     ConflictoError,
     CredencialesInvalidasError,
     CuentaBloqueadaError,
+    ValidacionError,
 )
 from src.domain.value_objects import Rol
 from src.infrastructure.security.pin_hasher import PinHasher
@@ -86,7 +88,7 @@ def test_login_bloqueo_tras_intentos(repos):
 
 def test_registro_ok(repos):
     linea = _linea(repos)
-    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas)
+    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas, repos.subrutas)
     s = uc.ejecutar(
         RegistroDTO(
             nombre="Juan",
@@ -117,7 +119,95 @@ def test_registro_dni_duplicado(repos):
         ),
         PinHasher.hash("1234"),
     )
-    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas)
+    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas, repos.subrutas)
+    with pytest.raises(ConflictoError):
+        uc.ejecutar(
+            RegistroDTO(
+                nombre="Juan",
+                dni="11111111",
+                telefono="987654321",
+                email=None,
+                pin="1234",
+                linea_id=linea.id,
+            )
+        )
+
+
+def test_registro_dni_inactivo_permite_reactivar(repos):
+    linea = _linea(repos)
+    uid = uuid4()
+    repos.usuarios.seed(
+        Usuario(
+            id=uid,
+            nombre="Dado de baja",
+            dni="11111111",
+            telefono="111111111",
+            email=None,
+            foto_url=None,
+            rol=Rol.JEFE_RUTA,
+            is_online=False,
+            created_at=datetime.now(UTC),
+            activo=False,
+            eliminado_en=datetime.now(UTC),
+        ),
+        PinHasher.hash("1234"),
+    )
+    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas, repos.subrutas)
+
+    solicitud = uc.ejecutar(
+        RegistroDTO(
+            nombre="Juan",
+            dni="11111111",
+            telefono="987654321",
+            email=None,
+            pin="1234",
+            linea_id=linea.id,
+        )
+    )
+
+    assert solicitud.usuario_id == uid
+
+
+# ---------- api ----------
+
+
+def test_registro_valida_subruta(repos):
+    linea = _linea(repos)
+    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas, repos.subrutas)
+    datos = dict(
+        nombre="Juan",
+        dni="11111111",
+        telefono="987654321",
+        email=None,
+        pin="1234",
+        linea_id=linea.id,
+    )
+    with pytest.raises(ValidacionError):
+        uc.ejecutar(RegistroDTO(**datos, subruta_id=999))
+    repos.subrutas.seed(Subruta(id=8, codigo="SR-8", nombre="SR 8", linea_codigo="L2", activa=True))
+    with pytest.raises(ValidacionError):
+        uc.ejecutar(RegistroDTO(**datos, subruta_id=8))
+
+
+def test_registro_rechaza_contacto_de_inactivo_ajeno(repos):
+    linea = _linea(repos)
+    uid = uuid4()
+    repos.usuarios.seed(
+        Usuario(
+            id=uid,
+            nombre="Baja",
+            dni="11111112",
+            telefono="987654321",
+            email=None,
+            foto_url=None,
+            rol=Rol.JEFE_RUTA,
+            is_online=False,
+            created_at=datetime.now(UTC),
+            activo=False,
+        ),
+        PinHasher.hash("1234"),
+    )
+    uc = RegistroUseCase(repos.usuarios, repos.solicitudes, repos.lineas, repos.subrutas)
     with pytest.raises(ConflictoError):
         uc.ejecutar(
             RegistroDTO(

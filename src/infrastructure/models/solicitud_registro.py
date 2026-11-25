@@ -12,6 +12,7 @@ class SolicitudRegistro(models.Model):
     ruta_trabajo = models.CharField(max_length=100, null=True, blank=True)
     usuario_id = models.UUIDField(null=True, blank=True)
     linea_solicitada_id = models.IntegerField(null=True, blank=True)
+    subruta_solicitada_id = models.IntegerField(null=True, blank=True)
     pin_hash = models.CharField(max_length=255, null=True, blank=True)
     estado = models.CharField(max_length=20, default="PENDIENTE")
     usuario_asignado = models.CharField(max_length=50, null=True, blank=True)

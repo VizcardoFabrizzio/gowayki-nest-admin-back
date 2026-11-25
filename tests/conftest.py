@@ -21,6 +21,7 @@ from src.application.usecases.unidades.eliminar import EliminarUnidadUseCase
 from src.application.usecases.unidades.listar import ListarUnidadesUseCase
 from src.application.usecases.unidades.listar_por_linea import ListarUnidadesPorLineaUseCase
 from src.application.usecases.usuarios.actualizar_rol import ActualizarRolUseCase
+from src.application.usecases.usuarios.actualizar_subruta import ActualizarSubrutaUseCase
 from src.application.usecases.usuarios.eliminar import EliminarUsuarioUseCase
 from src.application.usecases.usuarios.listar import ListarUsuariosUseCase
 from src.domain.entities.usuario import Usuario
@@ -51,7 +52,7 @@ def api(monkeypatch, repos):
     import src.presentation.views.usuario as vus
 
     va.login_use_case = lambda: LoginUseCase(r.usuarios, r.solicitudes)
-    va.registro_use_case = lambda: RegistroUseCase(r.usuarios, r.solicitudes, r.lineas)
+    va.registro_use_case = lambda: RegistroUseCase(r.usuarios, r.solicitudes, r.lineas, r.subrutas)
 
     vl.listar_lineas_use_case = lambda: ListarLineasUseCase(r.lineas)
     vl.obtener_linea_use_case = lambda: ObtenerLineaUseCase(r.lineas)
@@ -63,15 +64,17 @@ def api(monkeypatch, repos):
 
     vs.listar_solicitudes_use_case = lambda: ListarSolicitudesUseCase(r.solicitudes)
     vs.crear_cambio_ruta_use_case = lambda: CrearCambioRutaUseCase(
-        r.solicitudes, r.usuarios, r.lineas
+        r.solicitudes, r.usuarios, r.lineas, r.subrutas
     )
     vs.resolver_solicitud_use_case = lambda: ResolverSolicitudUseCase(
-        r.solicitudes, r.usuarios, r.lineas
+        r.solicitudes, r.usuarios, r.lineas, r.transacciones, r.subrutas
     )
 
     vu.listar_unidades_use_case = lambda: ListarUnidadesUseCase(r.unidades)
-    vu.crear_unidad_use_case = lambda: CrearUnidadUseCase(r.unidades, r.lineas)
-    vu.actualizar_unidad_use_case = lambda: ActualizarUnidadUseCase(r.unidades, r.lineas)
+    vu.crear_unidad_use_case = lambda: CrearUnidadUseCase(r.unidades, r.lineas, r.subrutas)
+    vu.actualizar_unidad_use_case = lambda: ActualizarUnidadUseCase(
+        r.unidades, r.lineas, r.subrutas
+    )
     vu.eliminar_unidad_use_case = lambda: EliminarUnidadUseCase(r.unidades)
     vu.listar_unidades_por_linea_use_case = lambda: ListarUnidadesPorLineaUseCase(
         r.unidades, r.lineas
@@ -79,6 +82,7 @@ def api(monkeypatch, repos):
 
     vus.listar_usuarios_use_case = lambda: ListarUsuariosUseCase(r.usuarios)
     vus.actualizar_rol_use_case = lambda: ActualizarRolUseCase(r.usuarios)
+    vus.actualizar_subruta_use_case = lambda: ActualizarSubrutaUseCase(r.usuarios)
     vus.eliminar_usuario_use_case = lambda: EliminarUsuarioUseCase(r.usuarios)
 
     from rest_framework.test import APIClient

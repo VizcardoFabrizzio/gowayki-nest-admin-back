@@ -22,10 +22,11 @@ class UnidadMapper:
             numero_padron=modelo.numero_padron,
             placa=modelo.placa,
             linea_id=modelo.linea_id,
-            estado=EstadoUnidad(modelo.estado),
+            estado=EstadoUnidad.del_panel(modelo.estado),
             created_at=modelo.created_at,
             linea_nombre=modelo.linea.nombre if modelo.linea_id else None,
             posicion_actual=posicion,
+            subruta_id=modelo.subruta_id,
         )
 
     @staticmethod
@@ -35,6 +36,7 @@ class UnidadMapper:
             numero_padron=unidad.numero_padron,
             placa=unidad.placa,
             linea_id=unidad.linea_id,
+            subruta_id=unidad.subruta_id,
             estado=unidad.estado.value,
             created_at=unidad.created_at,
         )

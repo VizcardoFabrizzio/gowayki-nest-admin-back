@@ -18,6 +18,7 @@ class SolicitudRegistro:
     ruta_trabajo: str | None = None
     placa_numero: str | None = None
     linea_solicitada_id: int | None = None
+    subruta_solicitada_id: int | None = None
     usuario_id: UUID | None = None
     pin_hash: str | None = None
     usuario_asignado: str | None = None

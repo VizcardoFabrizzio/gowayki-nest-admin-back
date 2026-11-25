@@ -6,10 +6,22 @@ services:
     env_file:
       - .env
     ports:
-      - "127.0.0.1:8000:8000"
+      # El panel se sirve desde otra máquina (Vite en el equipo del usuario),
+      # así que el API debe escuchar fuera de localhost. Si más adelante se
+      # pone un proxy inverso en el VPS, volver a 127.0.0.1:8000:8000.
+      - "0.0.0.0:8000:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/estado')"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+    # La base de datos vive en la red del compose del backend principal.
+    # Sin esto el contenedor arranca "healthy" pero no resuelve el host de la BD.
+    networks:
+      - gowayki-net
+
+networks:
+  gowayki-net:
+    name: gowayki-nest-back_default
+    external: true
