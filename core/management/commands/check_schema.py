@@ -4,6 +4,7 @@ from django.db import connection
 from src.infrastructure.models.linea import Linea
 from src.infrastructure.models.punto_control import PuntoControl
 from src.infrastructure.models.solicitud_registro import SolicitudRegistro
+from src.infrastructure.models.subruta import Subruta
 from src.infrastructure.models.unidad import Unidad
 from src.infrastructure.models.usuario import Usuario
 from src.infrastructure.models.usuario_linea import UsuarioLinea
@@ -15,10 +16,14 @@ MODELOS = {
     "punto_control": PuntoControl,
     "usuario_linea": UsuarioLinea,
     "solicitud_registro": SolicitudRegistro,
+    "subruta": Subruta,
 }
 
 IGNORADAS = {
     "punto_control": {"ubicacion"},
+    # La API Java almacena la linea en usuario.linea_id; el esquema Django usa
+    # la tabla usuario_linea. El campo es ajeno a este backend.
+    "usuario": {"linea_id"},
 }
 
 
@@ -41,16 +46,17 @@ class Command(BaseCommand):
                 columnas_db -= IGNORADAS.get(tabla, set())
                 columnas_modelo = {campo.column for campo in modelo._meta.local_fields}
 
-                faltantes = columnas_db - columnas_modelo
+                # La BD es compartida con la API Java: puede tener columnas que
+                # este backend no mapea (modelos unmanaged). Solo verificamos
+                # que las columnas que SÍ usamos existan.
                 sobrantes = columnas_modelo - columnas_db
 
-                if faltantes or sobrantes:
-                    diferencias.append((tabla, faltantes, sobrantes))
+                if sobrantes:
+                    diferencias.append((tabla, sobrantes))
                     self.stderr.write(f"{tabla}:")
-                    if faltantes:
-                        self.stderr.write(f"  faltan en el modelo: {', '.join(sorted(faltantes))}")
-                    if sobrantes:
-                        self.stderr.write(f"  sobran en el modelo: {', '.join(sorted(sobrantes))}")
+                    self.stderr.write(
+                        f"  columnas del modelo ausentes en la BD: {', '.join(sorted(sobrantes))}"
+                    )
                 else:
                     self.stdout.write(f"{tabla}: ok")
 
