@@ -569,3 +569,20 @@ def test_resolver_rechaza_subruta_de_otra_linea(repos):
     )
     with pytest.raises(NoEncontradoError):
         uc.ejecutar(s.id, ResolverSolicitudDTO(estado="APROBADA"))
+
+
+def test_listar_jefe_no_ve_solicitudes_destinadas_al_admin(repos):
+    repos.solicitudes.save(
+        SolicitudRegistro(
+            id=None,
+            tipo=TipoSolicitud.CAMBIO_RUTA,
+            dni="44444444",
+            nombre_completo="Cambio solicitado por un jefe",
+            estado=EstadoSolicitud.PENDIENTE,
+            creado_en=datetime.now(UTC),
+            subruta_solicitada_id=1,
+            usuario_asignado="ADMIN",
+        )
+    )
+    uc = ListarSolicitudesUseCase(repos.solicitudes)
+    assert uc.ejecutar(ListarSolicitudesDTO(rol="JEFE_RUTA", subruta_id=1)) == []

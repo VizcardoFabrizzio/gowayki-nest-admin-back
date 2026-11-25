@@ -30,4 +30,6 @@ class ListarSolicitudesUseCase:
             if solicitud.estado.value == "PENDIENTE"
             and solicitud.tipo in (TipoSolicitud.CHOFER, TipoSolicitud.CAMBIO_RUTA)
             and solicitud.subruta_solicitada_id == datos.subruta_id
+            # Las solicitudes de un jefe las aprueba el administrador.
+            and solicitud.usuario_asignado != "ADMIN"
         ]
