@@ -11,9 +11,14 @@ from src.infrastructure.container import (
     actualizar_rol_use_case,
     eliminar_usuario_use_case,
     listar_usuarios_use_case,
+    usuario_repository,
 )
-from src.presentation.permissions import EsAdmin
-from src.presentation.serializers.usuario import ActualizarRolSerializer, UsuarioSerializer
+from src.presentation.permissions import EsAdmin, EsAdminOJefeRuta
+from src.presentation.serializers.usuario import (
+    ActualizarRolSerializer,
+    ActualizarSubrutaSerializer,
+    UsuarioSerializer,
+)
 
 
 def _usuario_json(usuario: Usuario) -> dict:
@@ -57,3 +62,17 @@ class UsuarioDetailView(APIView):
     def delete(self, request, usuario_id: UUID):
         eliminar_usuario_use_case().ejecutar(usuario_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UsuarioSubrutaView(APIView):
+    permission_classes = [EsAdminOJefeRuta]
+
+    @extend_schema(request=ActualizarSubrutaSerializer, responses=UsuarioSerializer)
+    def patch(self, request, usuario_id: UUID):
+        usuario = usuario_repository().find_by_id(usuario_id)
+        if usuario is None:
+            return Response(
+                {"exito": False, "mensaje": "El usuario no existe."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(_usuario_json(usuario))
