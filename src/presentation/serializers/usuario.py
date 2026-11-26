@@ -5,6 +5,10 @@ class ActualizarRolSerializer(serializers.Serializer):
     rol = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class ActualizarSubrutaSerializer(serializers.Serializer):
+    subrutaId = serializers.IntegerField()
+
+
 class UsuarioSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     nombre = serializers.CharField()
