@@ -110,3 +110,19 @@ def test_api_eliminar_usuario(api):
     uid = _seed(repos, rol=Rol.JEFE_RUTA)
     resp = client.delete(f"/api/usuarios/{uid}")
     assert resp.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_api_actualizar_subruta(api):
+    repos, client = api
+    uid = _seed(repos, rol=Rol.JEFE_RUTA)
+    resp = client.patch(f"/api/usuarios/{uid}/subruta", {"subrutaId": 42}, format="json")
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["id"] == str(uid)
+
+
+def test_api_actualizar_subruta_no_existe(api):
+    repos, client = api
+    from uuid import uuid4
+
+    resp = client.patch(f"/api/usuarios/{uuid4()}/subruta", {"subrutaId": 42}, format="json")
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
