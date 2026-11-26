@@ -80,6 +80,7 @@ def api(monkeypatch, repos):
     vus.listar_usuarios_use_case = lambda: ListarUsuariosUseCase(r.usuarios)
     vus.actualizar_rol_use_case = lambda: ActualizarRolUseCase(r.usuarios)
     vus.eliminar_usuario_use_case = lambda: EliminarUsuarioUseCase(r.usuarios)
+    vus.usuario_repository = lambda: r.usuarios
 
     from rest_framework.test import APIClient
 
